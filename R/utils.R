@@ -1,16 +1,3 @@
-#' Read a mOTUs file
-#'
-#' @description Keep only the motus ID, not the tax name, which should be provided separately as colData.
-#' @import data.table
-read_motus <- function(path) {
-  d <- fread(path)
-  names(d)[1] <- "ID"
-  d$ID <- gsub(".*\\[(.*)\\]", "\\1", d$ID)
-  m <- as.matrix(d[, !"ID"])
-  rownames(m) <- d$ID
-  m
-}
-
 #' Generate a basic colData file from a mOTUs file
 #'
 #' @param path Path to a mOTUs file

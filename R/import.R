@@ -1,17 +1,22 @@
+#' @description Keep only the motus ID, not the tax name, which should be provided separately as colData.
+#'
+#' @import data.table
 #' @export
-import_motus <- function(path, sample_data_d = NULL, tax_table_m = NULL) {
-  otu <- otu_table(read_motus(path), taxa_are_rows = T)
-  tax <- if (is.null(tax_table_m)) {
-    tax_table(make_tax_table_from_motus(path))
-  } else {
-    tax_table_m
+import_motus <- function(path, make_tax_table = F) {
+  d <- fread(path)
+  names(d)[1] <- "ID"
+  d$ID <- gsub(".*\\[(.*)\\]", "\\1", d$ID)
+  m <- as.matrix(d[, !"ID"])
+  rownames(m) <- d$ID
+  ps <- phyloseq(otu_table(read_motus(path), taxa_are_rows = T))
+  if (make_tax_table) {
+    tax_table(ps) <- tax_table(make_tax_table_from_motus(path))
   }
-  phyloseq(otu, sample_data_d, tax)
 }
 
 #' @export
 #' @import data.table
-import_contig_depths <- function(depth_files, sample_data_d = NULL, seq_files = NULL, sub_pattern = "", sub_replacement = "") {
+import_contig_depths <- function(depth_files) {
   contig_depths <- rbindlist(lapply(depth_files, function(depth_file) {
     d <- fread(depth_file)
     bam_var <- grep("bam-var", names(d), value = T)
@@ -22,28 +27,14 @@ import_contig_depths <- function(depth_files, sample_data_d = NULL, seq_files = 
   contig_depths[, c("contigName", "AssemblyGroup") := .(paste(contigName, AssemblyGroup, sep = "@"), NULL)]
   contig_matrix <- as.matrix(contig_depths[, !c("contigName", "contigLen", "totalAvgDepth")])
   rownames(contig_matrix) <- contig_depths$contigName
-  ps <- phyloseq(otu_table(contig_matrix, taxa_are_rows = T), sample_data_d)
-  attr(ps, "contigs") <- contig_attributes
-  if (!is.null(seq_files)) {
-    if (!isTRUE(all.equal(sort(names(depth_files)), sort(names(seq_files))))) {
-      stop("The names of the depths_files and the names of seq_files must be identical.")
-    }
-    attr(ps, "seq_files") <- seq_files[names(depth_files)]
-  }
-  ps
+  otu_table(contig_matrix, taxa_are_rows = T)
 }
 
 #' @export
-import_mag_depths <- function(depths_file, sample_data_d = NULL, tax_table_m = NULL, seq_files = NULL) {
+#' @import data.table
+import_mag_depths <- function(depths_file) {
   mag_depths <- fread(depths_file)
   mag_matrix <- as.matrix(mag_depths[, -1])
   rownames(mag_matrix) <- mag_depths[[1]]
-  ps <- phyloseq(otu_table(mag_matrix, taxa_are_rows = T), sample_data_d, tax_table_m)
-  if (!is.null(seq_files)) {
-    if (!isTRUE(all.equal(sort(rownames(mag_matrix)), sort(names(seq_files))))) {
-      stop("The rownames of depths_file and the names of seq_files must be identical.")
-    }
-    attr(ps, "seq_files") <- seq_files[rownames(mag_matrix)]
-  }
-  ps
+  otu_table(mag_matrix, taxa_are_rows = T)
 }
