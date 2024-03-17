@@ -46,9 +46,9 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
   control_ps <- prune_taxa(unique(linker(control_tblout$SeqFile, control_tblout$Target)), ps)
   if (! is.null(taxrank)) {
     query_ps <- tax_glom(query_ps, taxrank)
-    taxa_names(query_ps) <- apply(tax_table(query_ps), 1, paste, collapse = ";_;")
+    taxa_names(query_ps) <- apply(tax_table(query_ps), 1, function(x) paste(na.omit(x), collapse = ";"))
     control_ps <- tax_glom(control_ps, taxrank)
-    taxa_names(control_ps) <- apply(tax_table(control_ps), 1, paste, collapse = ";_;")
+    taxa_names(control_ps) <- apply(tax_table(control_ps), 1, function(x) paste(na.omit(x), collapse = ";"))
     query_otu <- if (taxa_are_rows(ps)) {
       otu_table(query_ps)
     } else {
@@ -59,15 +59,20 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
     } else {
       t(otu_table(control_ps))
     }
+    queries_not_controlled <- setdiff(rownames(query_otu), rownames(control_otu))
+    if (length(queries_not_controlled)) {
+      warning(queries_not_controlled, " do not have any control hits")
+    }
     mer <- merge(
       as.data.table(query_otu, keep.rownames = "ID"),
       as.data.table(control_otu, keep.rownames = "ID"),
       by = "ID",
-      all.x = T
     )
     res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
     setnames(res, names(res), sub("\\.x$", "", names(res)))
     m <- as.matrix(res, rownames.value = mer$ID)
+    # XXX: set NaNs (0/0) to zero
+    m[is.nan(m)] <- 0
     otu_table(query_ps) <- otu_table(m, taxa_are_rows = T)
     return(query_ps)
   } else if (taxa_are_rows(ps)) {
@@ -75,6 +80,13 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
       colSums(otu_table(query_ps)) / colSums(otu_table(control_ps)),
       nrow = 1)
     colnames(m) <- colnames(otu_table(ps))
+    return(phyloseq(otu_table(m, taxa_are_rows(ps)), access(ps, "sam_data"), access(ps, "phy_tree"), access(ps, "ref_seq")))
+  } else {
+    # taxa are cols
+    m <- matrix(
+      rowSums(otu_table(query_ps)) / rowSums(otu_table(control_ps)),
+      nrow = 1)
+    rownames(m) <- rownames(otu_table(ps))
     return(phyloseq(otu_table(m, taxa_are_rows(ps)), access(ps, "sam_data"), access(ps, "phy_tree"), access(ps, "ref_seq")))
   }
 }
