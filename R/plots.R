@@ -48,9 +48,9 @@ barplot_depth <- function(ps, group = "Sample", fill = NULL, position = "stack",
     aes(
       x = if (paste(group, "zzorder", sep = "_") %in% names(d)) { .data[[paste(group, "zzorder", sep = "_")]] } else { .data[[group]] },
       fill = if (is.null(fill)) { NULL } else if (paste(fill, "zzorder", sep = "_") %in% names(d)) { .data[[paste(fill, "zzorder", sep = "_")]] } else { .data[[fill]] },
-      y = Abundance,
+      y = Abundance
   )) +
-    geom_col(position = position) +
+    geom_col(position = position, ...) +
     theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5)) +
     labs(fill = fill, x = group) +
     if (is.null(wrap)) NULL else facet_wrap(~.data[[wrap]])
@@ -61,7 +61,7 @@ barplot_depth <- function(ps, group = "Sample", fill = NULL, position = "stack",
   p
 }
 
-boxplot_depth <- function(ps, group, x = group, wrap = NULL, ...) {
+boxplot_depth <- function(ps, fill = NULL, x = fill, wrap = NULL, ...) {
   d <- if (is.list(ps)) {
     rbindlist(lapply(ps_list, function(ps) {
       setDT(psmelt(ps))
@@ -69,11 +69,13 @@ boxplot_depth <- function(ps, group, x = group, wrap = NULL, ...) {
   } else {
     setDT(psmelt(ps))
   }
-  # The c() in by is necessary, otherwise group will be interpreted as a column of d (if present)
-  d <- d[, .(Abundance = sum(Abundance)), by = c(unique(c(group, x)))]
-  ggplot(d, aes(x = factor(.data[[x]]), y = Abundance)) +
-    geom_boxplot() +
-    if (is.null(wrap)) NULL else facet_wrap(~.data[[wrap]]) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5)) +
-    xlab(group)
+  ggplot(d,
+    aes(
+      x = if (is.null(x)) { NULL } else if (paste(x, "zzorder", sep = "_") %in% names(d)) { .data[[paste(x, "zzorder", sep = "_")]] } else { .data[[x]] },
+      fill = if (is.null(fill)) { NULL } else if (paste(fill, "zzorder", sep = "_") %in% names(d)) { .data[[paste(fill, "zzorder", sep = "_")]] } else { .data[[fill]] },
+      y = Abundance
+  )) +
+    geom_boxplot(...) +
+    labs(x = x, fill = fill) +
+    if (is.null(wrap)) NULL else facet_wrap(~.data[[wrap]])
 }
