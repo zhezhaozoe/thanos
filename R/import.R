@@ -25,7 +25,7 @@ import_contig_depths <- function(depth_files, sub_pattern, sub_replacement) {
   }), use.names = T, id = "AssemblyGroup")
   contig_attributes <- as.matrix(contig_depths[, .(contigLen, totalAvgDepth)])
   contig_matrix <- as.matrix(contig_depths[, lapply(.SD, function(avg_depth) {
-    avg_depth * contig_depths$contigLen / sum(contig_depths$totalAvgDepth * contig_depths$contigLen)
+    avg_depth * contig_depths$contigLen / sum(avg_depth * contig_depths$contigLen)
   }), .SDcols = !c("contigName", "AssemblyGroup", "contigLen", "totalAvgDepth")])
   # contig_depths$totalAvgDepth * contig_depths
   rownames(contig_matrix) <- rownames(contig_attributes) <- paste(contig_depths$contigName, contig_depths$AssemblyGroup, sep = "@")
