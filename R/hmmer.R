@@ -41,7 +41,9 @@ search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6) {
 
 #' @import data.table
 #' @export
-get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = NULL) {
+get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = NULL, phyloseq = TRUE) {
+  # stopifnot(length(query_tblout) == 1)
+  # stopifnot(length(control_tblout) == 1)
   query_ps <- prune_taxa(unique(linker(query_tblout$SeqFile, query_tblout$Target)), ps)
   control_ps <- prune_taxa(unique(linker(control_tblout$SeqFile, control_tblout$Target)), ps)
   if (! is.null(taxrank)) {
@@ -68,6 +70,9 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
       as.data.table(control_otu, keep.rownames = "ID"),
       by = "ID",
     )
+    if (isFALSE(phyloseq)) {
+      return(mer)
+    }
     res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
     setnames(res, names(res), sub("\\.x$", "", names(res)))
     m <- as.matrix(res, rownames.value = mer$ID)
@@ -76,18 +81,36 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
     otu_table(query_ps) <- otu_table(m, taxa_are_rows = T)
     return(query_ps)
   } else if (taxa_are_rows(ps)) {
-    m <- matrix(
-      colSums(otu_table(query_ps)) / colSums(otu_table(control_ps)),
-      nrow = 1)
-    colnames(m) <- colnames(otu_table(ps))
-    return(phyloseq(otu_table(m, taxa_are_rows(ps)), access(ps, "sam_data"), access(ps, "phy_tree"), access(ps, "ref_seq")))
+    mer <- merge(
+      as.data.table(t(colSums(otu_table(query_ps))))[, ID := "sp1"],
+      as.data.table(t(colSums(otu_table(control_ps))))[, ID := "sp1"],
+      by = "ID"
+    )
+    if (isFALSE(phyloseq)) {
+      return(mer)
+    }
+    res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
+    setnames(res, names(res), sub("\\.x$", "", names(res)))
+    m <- as.matrix(res, rownames.value = mer$ID)
+    # XXX: set NaNs (0/0) to zero
+    m[is.nan(m)] <- 0
+    return(phyloseq(otu_table(m, taxa_are_rows = T), access(ps, "sam_data"), access(ps, "phy_tree"), access(ps, "ref_seq")))
   } else {
     # taxa are cols
-    m <- matrix(
-      rowSums(otu_table(query_ps)) / rowSums(otu_table(control_ps)),
-      nrow = 1)
-    rownames(m) <- rownames(otu_table(ps))
-    return(phyloseq(otu_table(m, taxa_are_rows(ps)), access(ps, "sam_data"), access(ps, "phy_tree"), access(ps, "ref_seq")))
+    mer <- merge(
+      as.data.table(t(rowSums(otu_table(query_ps))))[, ID := "sp1"],
+      as.data.table(t(rowSums(otu_table(control_ps))))[, ID := "sp1"],
+      by = "ID"
+    )
+    if (isFALSE(phyloseq)) {
+      return(mer)
+    }
+    res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
+    setnames(res, names(res), sub("\\.x$", "", names(res)))
+    m <- t(as.matrix(res, rownames.value = mer$ID))
+    # XXX: set NaNs (0/0) to zero
+    m[is.nan(m)] <- 0
+    return(phyloseq(otu_table(m, taxa_are_rows = F), access(ps, "sam_data"), access(ps, "phy_tree"), access(ps, "ref_seq")))
   }
 }
 
