@@ -61,7 +61,10 @@ barplot_depth <- function(ps, group = "Sample", fill = NULL, position = "stack",
   p
 }
 
-boxplot_depth <- function(ps, fill = NULL, x = fill, wrap = NULL, ...) {
+boxplot_depth <- function(ps, fill = NULL, x = fill, wrap = NULL, signif = TRUE, test = "wilcox.test", ...) {
+  if (!is.null(wrap) && isTRUE(signif)) {
+    stop("`wrap` is not supported with `signif`, please use patchwork instead.")
+  }
   d <- if (is.list(ps)) {
     rbindlist(lapply(ps_list, function(ps) {
       setDT(psmelt(ps))
@@ -69,13 +72,43 @@ boxplot_depth <- function(ps, fill = NULL, x = fill, wrap = NULL, ...) {
   } else {
     setDT(psmelt(ps))
   }
-  ggplot(d,
-    aes(
-      x = if (is.null(x)) { NULL } else if (paste(x, "zzorder", sep = "_") %in% names(d)) { .data[[paste(x, "zzorder", sep = "_")]] } else { .data[[x]] },
-      fill = if (is.null(fill)) { NULL } else if (paste(fill, "zzorder", sep = "_") %in% names(d)) { .data[[paste(fill, "zzorder", sep = "_")]] } else { .data[[fill]] },
-      y = Abundance
+  if (! is.factor(d[[x]])) {
+    d[[x]] <- factor(d[[x]])
+  }
+  p <- ggplot(d, aes(
+    x = if (is.null(x)) { NULL } else if (paste(x, "zzorder", sep = "_") %in% names(d)) { .data[[paste(x, "zzorder", sep = "_")]] } else { .data[[x]] },
+    fill = if (is.null(fill)) { NULL } else if (paste(fill, "zzorder", sep = "_") %in% names(d)) { .data[[paste(fill, "zzorder", sep = "_")]] } else { .data[[fill]] },
+    y = Abundance
   )) +
     geom_boxplot(...) +
-    labs(x = x, fill = fill) +
-    if (is.null(wrap)) NULL else facet_wrap(~.data[[wrap]])
+    labs(x = x, fill = fill)
+  if (isTRUE(signif)) {
+    x_positions <- as.integer(unique(d[[x]]))
+    comps <- rbindlist(apply(CJ(V1 = x_positions, V2 = x_positions)[V1 < V2], 1, function(r) {
+      test_res <- match.fun(test)(as.formula(paste("Abundance", x, sep = " ~ ")), d[as.integer(d[[x]]) %in% r])
+      data.table(x1 = r[1], x2 = r[2], p.value = test_res$p.value)
+    }))
+    lev <- 1
+    for (span in 1:(length(x_positions) - 1)) {
+      for (start in 1:(min(span, length(x_positions) - span))) {
+        mask <- data.table(
+          x1 = seq(start, length(x_positions) - span, span),
+          x2 = seq(start + span, length(x_positions), span)
+        )
+        comps[mask, level := lev, on = c("x1", "x2")]
+        lev <- lev + 1
+      }
+    }
+    comps$max_y <- max(d$Abundance)
+    comps$shift_y <- (max(d$Abundance) - min(d$Abundance)) / 20
+    p <- p +
+      geom_segment(data = comps, aes(x = x1, xend = x2, y = max_y + 2 * shift_y * level, yend = max_y + 2 * shift_y * level), inherit.aes = F) +
+      geom_segment(data = comps, aes(x = x1, xend = x1, y = max_y + 2 * shift_y * level, yend = max_y + 2 * shift_y * level - shift_y), inherit.aes = F) +
+      geom_segment(data = comps, aes(x = x2, xend = x2, y = max_y + 2 * shift_y * level, yend = max_y + 2 * shift_y * level - shift_y), inherit.aes = F) +
+      geom_text(data = comps, aes(x = (x1 + x2) / 2, y = max_y + 2 * shift_y * level, label = prettyNum(`p.value`, 2)), vjust = 0, nudge_y = comps$shift_y / 2, inherit.aes = F)
+  }
+  if (! is.null(wrap)) {
+    p <- p + facet_wrap(~.data[[wrap]], scale = "free_x")
+  }
+  p
 }
