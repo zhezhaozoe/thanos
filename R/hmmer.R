@@ -117,4 +117,4 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
 #' @export
 mags_linker <- function(SeqName, Target) SeqName
 #' @export
-contigs_linker <- function(SeqName, Target) paste(SeqName, sub("_[^_]+$", "", Target), sep = "@")
+contigs_linker <- function(SeqName, Target) paste(sub("_[^_]+$", "", Target), SeqName, sep = "@")
