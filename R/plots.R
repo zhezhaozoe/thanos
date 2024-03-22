@@ -53,7 +53,7 @@ barplot_depth <- function(ps, group = "Sample", fill = NULL, position = "stack",
     geom_col(position = position, ...) +
     theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5)) +
     labs(fill = fill, x = group) +
-    if (is.null(wrap)) NULL else facet_wrap(~.data[[wrap]])
+    if (is.null(wrap)) NULL else facet_wrap(~.data[[wrap]], scale = "free_x")
   # The c() in by is necessary, otherwise group will be interpreted as a column of d (if present)
   if (all(d[, sum(Abundance), by = c(group)]$V1 == 1, na.rm = T) || position == "fill") {
     p <- p + scale_y_continuous(labels = scales::percent)
