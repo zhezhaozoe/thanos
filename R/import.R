@@ -10,24 +10,28 @@ import_motus <- function(path, make_tax_table = F) {
   rownames(m) <- d$ID
   ps <- phyloseq(otu_table(read_motus(path), taxa_are_rows = T))
   if (make_tax_table) {
-    tax_table(ps) <- tax_table(make_tax_table_from_motus(path))
+    tax_table(ps) <- tax_table(make_motus_tax_table(path))
   }
 }
 
 #' @export
 #' @import data.table
-import_contig_depths <- function(depth_files) {
+import_contig_depths <- function(depth_files, sub_pattern, sub_replacement) {
   contig_depths <- rbindlist(lapply(depth_files, function(depth_file) {
     d <- fread(depth_file)
     bam_var <- grep("bam-var", names(d), value = T)
     new_names <- sub(sub_pattern, sub_replacement, grep("bam-var", names(d), value = T, invert = T))
     setNames(d[, !bam_var, with = F], new_names)
   }), use.names = T, id = "AssemblyGroup")
-  contig_attributes <- contig_depths[, .(contigName, AssemblyGroup, contigLen, totalAvgDepth)]
-  contig_depths[, c("contigName", "AssemblyGroup") := .(paste(contigName, AssemblyGroup, sep = "@"), NULL)]
-  contig_matrix <- as.matrix(contig_depths[, !c("contigName", "contigLen", "totalAvgDepth")])
-  rownames(contig_matrix) <- contig_depths$contigName
+  contig_attributes <- as.matrix(contig_depths[, .(contigLen, totalAvgDepth)])
+  contig_matrix <- as.matrix(contig_depths[, lapply(.SD, function(avg_depth) {
+    avg_depth * contig_depths$contigLen / sum(contig_depths$totalAvgDepth * contig_depths$contigLen)
+  }), .SDcols = !c("contigName", "AssemblyGroup", "contigLen", "totalAvgDepth")])
+  # contig_depths$totalAvgDepth * contig_depths
+  rownames(contig_matrix) <- rownames(contig_attributes) <- paste(contig_depths$contigName, contig_depths$AssemblyGroup, sep = "@")
   otu_table(contig_matrix, taxa_are_rows = T)
+  # Taxonomy table is expected to be characters, so we can't use contig_attributes... too bad.
+  # phyloseq(otu_table(contig_matrix, taxa_are_rows = T), tax_table(contig_attributes))
 }
 
 #' @export
