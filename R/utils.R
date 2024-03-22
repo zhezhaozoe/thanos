@@ -2,12 +2,21 @@
 #'
 #' @param path Path to a mOTUs file
 #' @param level Taxonomic level of the mOTUs in the file
-make_tax_table_from_motus <- function(path, level = "mOTU") {
+make_motus_tax_table <- function(path, level = "mOTU") {
   d <- fread(path)
   tax_table <- matrix(gsub("(^[^[]*) \\[.*\\]", "\\1", d[[1]]), ncol = 1)
   colnames(tax_table) <- level
   rownames(tax_table) <- gsub(".*\\[(.*)\\]", "\\1", d[[1]])
   tax_table
+}
+
+make_motus_tax_table_from_gtdb <- function(motus_table, gtdb_map) {
+  if (!file.exists(gtdb_map)) {
+    error("Please download or create a mapping between mOTUs and GTDB identifier. For mOTUs3, the file can be downloaded at https://sunagawalab.ethz.ch/share/MOTU_GTDB/mOTUs_3.0.0_GTDB_tax.tsv")
+  }
+  gtdb <- as.matrix(fread(gtdb_map, header = F), rownames = 1)
+  gtdb_tax_table <- gtdb[rownames(motus_table), ]
+  tax_table(gtdb_tax_table)
 }
 
 shorten_species_name <- function(common_name) {
