@@ -1,9 +1,26 @@
+#' Retrieve and Align KEGG Gene Sequences
+#'
+#' This function retrieves amino acid sequences for genes associated with a given KEGG Orthology (KO) identifier and performs a multiple sequence alignment (MSA) on them.
+#'
+#' @param ko A character string specifying the KEGG Orthology (KO) identifier.
+#' @param ... Additional arguments passed to the `msa` function for performing the multiple sequence alignment.
+#' 
+#' @return An object of class `msa` representing the multiple sequence alignment of the retrieved sequences. The name of the KO identifier is stored as an attribute named \code{"name"} of the returned object.
+#'
+#' @examples
+#' \dontrun{
+#'   aln <- get_kegg_msa("K02533")
+#'   plot(aln)
+#' }
+#'
 #' @importFrom KEGGREST keggFind keggGet
-#' @import msa
+#' @importFrom Biostrings msa
+#' @export
 get_kegg_msa <- function(ko, ...) {
   genes <- names(keggFind("genes", ko))
+  # keggGet expects at most 10 genes
   batches <- split(genes, 0:(length(genes)-1) %/% 10)
-  sequence_sets <- sapply(batches[1:2], function(batch) {
+  sequence_sets <- sapply(batches, function(batch) {
     Sys.sleep(.1)
     keggGet(batch, "aaseq")
   })
@@ -13,7 +30,29 @@ get_kegg_msa <- function(ko, ...) {
   aln
 }
 
+#' Build a Hidden Markov Model (HMM) from a sequence alignment
+#'
+#' This function takes a sequence alignment, converts it to the Stockholm format, and then uses the `hmmbuild` command
+#' from the HMMER suite to build a Hidden Markov Model (HMM).
+#'
+#' @param aln A sequence alignment object. The alignment object should have an optional "name" attribute, which will be used as the name of the HMM.
+#'
+#' @return The path to the file containing the generated HMM.
+#'
+#' @examples
+#' # Assuming `my_alignment` is an alignment object
+#' hmm_file <- build_hmm(my_alignment)
+#' # hmm_file now contains the path to the HMM file
+#'
+#' @note This function requires the external programs `esl-reformat` and `hmmbuild` from the HMMER suite to be 
+#'       installed and accessible in the system's PATH.
+#'
+#' @references
+#' Eddy, S.R. "HMMER: biosequence analysis using profile hidden Markov models."
+#' http://hmmer.org/
+#' 
 #' @importFrom Biostrings writeXStringSet unmasked
+#' @export
 build_hmm <- function(aln) {
   faa <- tempfile(fileext = ".faa")
   writeXStringSet(unmasked(aln), file=faa)
@@ -29,18 +68,65 @@ build_hmm <- function(aln) {
   return(hmm)
 }
 
-#' @import data.table
+#' Perform HMMER search across multiple databases
+#'
+#' This function executes HMMER search on a given Hidden Markov Model (HMM) file across 
+#' multiple database files (dbs). It allows the setting of the number of CPUs to be used 
+#' and the inclusion E-value threshold. The results from searching each database are combined 
+#' into a single data table.
+#'
+#' @param hmm A string specifying the path to the HMM file to be searched with.
+#' @param dbs A character vector, where each element is a path to a database file to be searched.
+#' @param cpu An integer indicating the number of CPUs to be used for the search. Defaults to 1.
+#' @param incE A numeric value specifying the inclusion E-value threshold. Defaults to 1e-6.
+#'
+#' @return A data frame containing the combined results of the HMM searches on all databases. 
+#'         Each row represents one HMMER hit, and the data frame includes a column 'SeqFile' indicating 
+#'         the database file from which each hit originates.
+#'
+#' @examples
+#' hmm_file <- "your_hmm_file.hmm"
+#' db_files <- c("database1.fasta", "database2.fasta")
+#' search_results <- search_hmm(hmm_file, db_files, cpu = 2, incE = 1e-5)
+#'
 #' @export
 search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6) {
   tblout <- tempfile(fileext = ".tblout")
-  rbindlist(lapply(dbs, function(target) {
+  data.table::rbindlist(lapply(dbs, function(target) {
     system2("hmmsearch", c("--tblout", tblout, "--cpu", cpu, "--incE", incE, hmm, target))
     read_hmmer_tblout(tblout)
   }), id = "SeqFile")
 }
 
-#' @import data.table
-#' @export
+#' Compare OTU hits depths between query and control
+#'
+#' @param ps A phyloseq object containing OTU (Operational Taxonomic Units) counts and (optionally) taxonomic information.
+#' @param query_tblout Character; the HMMER output for the query genes.
+#' @param control_tblout Character; the HMMER output for the control genes.
+#' @param linker Function that links OTU identifiers between tblout tables and the phyloseq object. The function must take two arguments: SeqFile and Target.
+#' @param taxrank Optional; character specifying the taxonomic rank at which to aggregate hits. Valid options depend on the taxonomic ranks present in the `ps` object. If not specified, no aggregation is performed.
+#' @param phyloseq Logical; if TRUE, returns a phyloseq object, otherwise returns a data.table object. Defaults to TRUE.
+#'
+#' @return If `phyloseq` is TRUE (the default), this function returns a phyloseq object that contains the relative OTU depths of query vs control genes (aggregated by taxrank if specified). If `phyloseq` is FALSE, it returns a data.table object containing the calculated depths for queries and controls separately.
+#'
+#' @description `get_hits_depths` function calculates the relative OTU depths between the query and control genes, optionally aggregating hits at a specified taxonomic rank.
+#'
+#' @details The function prunes the phyloseq object to include only taxa that are present in both the query and control datasets based on the `linker` function. If a taxonomic rank is specified, the function aggregates hits at that rank and recalculates taxa names. It also warns about queries not found in the control. It performs calculates the depth ratios between query and control conditions.
+#' Two linker functions are provided: mags_linker() and contigs_linker().
+#'
+#' @examples
+#' ```
+#' # Assume ps is a phyloseq object with taxa, otu_table etc., query_tblout and control_tblout are loaded
+#' # Define a simple linker function
+#' linker_function <- function(seq_file, target) {
+#'   paste(seq_file, target, sep = "_")
+#' }
+#' # Call the get_hits_depths function without aggregation
+#' get_hits_depths_result <- get_hits_depths(ps, query_tblout, control_tblout, linker_function)
+#' 
+#' # Call the get_hits_depths function with aggregation at genus level
+#' get_hits_depths_aggregated <- get_hits_depths(ps, query_tblout, control_tblout, linker_function, taxrank = "Genus")
+#' ```
 get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = NULL, phyloseq = TRUE) {
   # stopifnot(length(query_tblout) == 1)
   # stopifnot(length(control_tblout) == 1)
