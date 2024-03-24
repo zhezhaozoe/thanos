@@ -9,8 +9,17 @@ make_motus_tax_table(path, level = "mOTU")
 \arguments{
 \item{path}{Path to a mOTUs file}
 
-\item{level}{Taxonomic level of the mOTUs in the file}
+\item{level}{Taxonomic level of the mOTUs in the file
+Generate Taxonomy Table from mOTUs Data}
+}
+\value{
+A taxonomy table with one column named after the specified taxonomic level (\code{level}). This column contains the taxonomic names, and the row names of the table are the mOTU identifiers extracted from the data.
 }
 \description{
 Generate a basic colData file from a mOTUs file
+}
+\examples{
+tax_table <- make_motus_tax_table("path/to/motus_data.txt")
+head(tax_table)
+
 }
