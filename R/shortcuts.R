@@ -14,10 +14,72 @@
 #' @examples
 #' tblout_from_ko("K00001")
 #' @export
-tblout_from_ko <- function(ko, method = "Muscle", cpu = 1, incE = 1e-6, ...) {
+tblout_from_ko <- function(ko, dbs, method = "Muscle", cpu = 1, incE = 1e-6, ...) {
   aln <- get_kegg_msa(ko, method = method, ...)
   hmm <- build_hmm(aln)
   search_hmm(hmm, dbs, cpu = cpu, incE = incE)
+}
+
+#' Perform HMM-based search from an alignment
+#'
+#' This function takes aligned fasta sequences (AFA) as an input, constructs
+#' a Hidden Markov Model (HMM), and uses it to search in designated databases.
+#' 
+#' @param afa Aligned fasta sequences in string format or an object that  
+#'  can be interpreted as such.
+#' @param cpu The number of CPU cores to use for the search process.
+#'  Defaults to 1 to ensure compatibility with all systems.
+#' @param incE The inclusion threshold E-value for reported hits in the
+#'  search. Lower values are more stringent. Defaults to 1e-6.
+#' @param ... Additional arguments to be passed to the search function.
+#'
+#' @return Returns the path to the tblout results.
+#'
+#' @examples
+#' # Example assuming 'sequences.afa' is your aligned fasta file
+#' afa_content <- readLines("sequences.afa")
+#' search_results <- tblout_from_afa(afa_content)
+#' print(search_results)
+#'
+#' @export
+tblout_from_afa <- function(afa, dbs, cpu = 1, incE = 1e-6) {
+  hmm <- build_hmm(afa)
+  search_hmm(hmm, dbs, cpu = cpu, incE = incE)
+}
+
+#' Perform a Multiple Sequence Alignment and Find Hits in Databases
+#'
+#' This function first reads a fasta file containing amino acid sequences, performs
+#' a multiple sequence alignment using the specified method, and then searches
+#' for hits in databases using the aligned sequences. The results are returned
+#' in a specific format.
+#'
+#' @param faa Character. The path to the fasta file containing amino acid sequences.
+#' @param dbs Character or Character vector. Specifies the databases against which the
+#' sequences will be searched.
+#' @param method Character. The default method for sequence alignment is "Muscle".
+#' Other methods supported by `msa` function can be used.
+#' @param cpu Integer. The number of CPU threads to use for the search. The default is 1.
+#' @param incE Numeric. The inclusion threshold E-value for considering a database hit
+#' significant. Defaults to 1e-6.
+#' @param ... Additional arguments passed to the `msa` function.
+#'
+#' @return Returns the result of searching the aligned sequences against specified
+#' databases. The format of the returned object depends on the implementation of
+#' `tblout_from_afa`.
+#'
+#' @examples
+#' \dontrun{
+#' tblout_from_faa("sequences.faa", dbs=c("db1", "db2"), method="ClustalW")
+#' }
+#'
+#' @export
+#' @importFrom Biostrings readAAStringSet
+#' @importFrom msa msa
+tblout_from_faa <- function(faa, dbs, method = "Muscle", cpu = 1, incE = 1e-6, ...) {
+  mySequences <- Biostrings::readAAStringSet(faa)
+  aln <- msa::msa(mySequences, method = method, ...)
+  tblout_from_afa(aln, cpu = cpu, incE = incE)
 }
 
 #' Obtain Contigs Hits Depths from Depth Files
@@ -84,9 +146,9 @@ get_contigs_hits_depths <- function(depths_files, pattern, replacement, query_tb
 #' hit_depths <- get_hits_depths_from_kos(kos, ps, dbs, control_tblout, linker)
 #' 
 #' @export
-get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_method = "Muscle", cpu = 1, incE = 1e-6, taxrank = NULL) {
+get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_method = "Muscle", cpu = 1, incE = 1e-6, taxrank = NULL, ...) {
   lapply(kos, function(ko) {
-    query_tblout <- tblout_from_ko(ko, method = msa_method, cpu = cpu, incE = incE)
+    query_tblout <- tblout_from_ko(ko, dbs, method = msa_method, cpu = cpu, incE = incE, ...)
     get_hits_depths(ps, query_tblout, control_tblout, linker, taxrank = taxrank)
   })
 }
@@ -120,7 +182,6 @@ get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_m
 #' results <- get_contigs_hits_depths_from_kos(kos, depths_files, pattern, replacement, NULL, control_tblout)
 #' }
 #'
-#' @importFrom lapply
 #' @export
 get_contigs_hits_depths_from_kos <- function(kos, depths_files, pattern, replacement, dbs, control_tblout, linker = contigs_linker, msa_method = "Muscle", cpu = 1, incE = 1e-6, verbose = F) {
   lapply(kos, function(ko) {
