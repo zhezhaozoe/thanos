@@ -11,19 +11,7 @@
 #' @return The imported motus data. If make_tax_table is TRUE, a tax table is also returned.
 #'
 #' @import data.table
-#' @export
-#' Import MOTUs from a File
-#'
-#' This function imports micro-organism OTUs (Operational Taxonomic Units) from a specified file path,
-#' optionally creating a default taxonomic table from the mOTUs names. It creates a phyloseq object from the mOTUs abundances.
-#'
-#' @param path character string specifying the location of the file containing the mOTUs data.
-#' @param make_tax_table logical indicating whether a taxonomic table should also be created and attached
-#' to the phyloseq object. Defaults to FALSE.
-#'
-#' @return Returns a phyloseq object constructed from the OTU data, with an optional taxonomic table.
-#' @importFrom data.table fread
-#' @importFrom phyloseq otu_table tax_table phyloseq
+#' @import phyloseq
 #' @examples
 #' motus_data <- import_motus("path/to/your/motus_file.csv", make_tax_table = TRUE)
 #' @export

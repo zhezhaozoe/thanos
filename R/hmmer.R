@@ -29,7 +29,7 @@ build_hmm <- function(aln) {
     afa <- aln
   } else if ("MsaAAMultipleAlignment" %in% class(aln)) {
     afa <- tempfile(fileext = ".afa")
-    writeXStringSet(unmasked(aln), file=afa)
+    Biostrings::writeXStringSet(msa::unmasked(aln), file=afa)
   } else {
     stop("Unrecognised format. aln can be either the path to an alignment in fasta format or an object of class from the msa package")
   }

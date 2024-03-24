@@ -19,7 +19,7 @@
 #' @export
 get_kegg_msa <- function(ko, nmax = Inf, method = "Muscle", ...) {
   stopifnot(length(ko) == 1)
-  genes <- names(keggFind("genes", ko))
+  genes <- names(KEGGREST::keggFind("genes", ko))
   if (nmax < Inf) {
     genes <- genes[1:min(length(genes), nmax)]
   }
@@ -27,10 +27,10 @@ get_kegg_msa <- function(ko, nmax = Inf, method = "Muscle", ...) {
   batches <- split(genes, 0:(length(genes)-1) %/% 10)
   sequence_sets <- sapply(batches, function(batch) {
     Sys.sleep(.1)
-    keggGet(batch, "aaseq")
+    KEGGREST::keggGet(batch, "aaseq")
   })
   sequences <- Reduce(`c`, sequence_sets)
-  aln <- msa(sequences, method = method, ...)
+  aln <- msa::msa(sequences, method = method, ...)
   attr(aln, "name") <- ko
   aln
 }
@@ -61,7 +61,7 @@ get_kegg_msa <- function(ko, nmax = Inf, method = "Muscle", ...) {
 #' into your R session.
 get_kegg_kos_from_module <- function(module) {
   stopifnot(length(module) == 1)
-  m <- keggGet(module)
+  m <- KEGGREST::keggGet(module)
   kos_raw <- names(m[[1]]$ORTHOLOGY)
   unlist(strsplit(kos_raw, ","))
 }
