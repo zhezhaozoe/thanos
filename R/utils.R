@@ -27,7 +27,7 @@ make_motus_tax_table <- function(path, level = "mOTU") {
 #'
 #' @param motus_table The user's mOTUs table with rownames as mOTUs identifiers.
 #' @param gtdb_map Path to the GTDB mapping file.
-#' 
+#'
 #' @return A `tax_table` object containing the GTDB taxonomy for the input mOTUs.
 #'
 #' @examples
@@ -75,18 +75,18 @@ make_motus_tax_table_from_gtdb <- function(motus_table, gtdb_map) {
 shorten_species_name <- function(common_name) {
   common_name <- trimws(common_name) # Remove leading/trailing whitespace
   candidatus <- ""
-  if(grepl("Candidatus", common_name)) {
+  if (grepl("Candidatus", common_name)) {
     candidatus <- "Ca. "
     common_name <- sub("Candidatus ", "", common_name)
   }
-  if(grepl("species incertae sedis", common_name)) {
+  if (grepl("species incertae sedis", common_name)) {
     common_name <- sub("species incertae sedis", "sp. inc. s.", common_name)
     return(paste0(candidatus, common_name))
   }
   parts <- strsplit(common_name, " ")[[1]]
   if (length(parts) == 2) {
     if (parts[2] != "sp.") {
-      common_name <- paste0(substr(parts[1], 1, 1), ". ", paste(parts[2], collapse=" "))
+      common_name <- paste0(substr(parts[1], 1, 1), ". ", paste(parts[2], collapse = " "))
     }
     return(paste0(candidatus, common_name))
   }
@@ -96,7 +96,7 @@ shorten_species_name <- function(common_name) {
 #' Read HMMER tblout files
 #'
 #' Parses the tblout output format of HMMER tools (e.g., hmmscan, hmmsearch) and
-#' creates a data table with relevant columns for target and query sequences, 
+#' creates a data table with relevant columns for target and query sequences,
 #' including e-values, scores, and additional metrics, plus the description.
 #'
 #' @param file A string. The path to the HMMER tblout file to be read.

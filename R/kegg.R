@@ -5,7 +5,7 @@
 #' @param ko A character string specifying the KEGG Orthology (KO) identifier.
 #' @param nmax The maximum number of genes to include in the alignment (Default: no limit).
 #' @param ... Additional arguments passed to the `msa` function for performing the multiple sequence alignment.
-#' 
+#'
 #' @return An object of class `msa` representing the multiple sequence alignment of the retrieved sequences. The name of the KO identifier (or, if NULL, the KO identifier itself) is stored as an attribute named \code{"name"} of the returned object.
 #'
 #' @examples
@@ -24,7 +24,7 @@ get_kegg_msa <- function(ko, nmax = Inf, method = "Muscle", ...) {
     genes <- genes[1:min(length(genes), nmax)]
   }
   # keggGet expects at most 10 genes
-  batches <- split(genes, 0:(length(genes)-1) %/% 10)
+  batches <- split(genes, 0:(length(genes) - 1) %/% 10)
   sequence_sets <- sapply(batches, function(batch) {
     Sys.sleep(.1)
     KEGGREST::keggGet(batch, "aaseq")

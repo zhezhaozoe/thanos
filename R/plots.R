@@ -12,14 +12,14 @@
 #' @param position The position adjustment of bars. Can be "stack", "fill", or
 #'   others as defined by `ggplot2`. Default is "stack".
 #' @param ... Additional arguments passed to `geom_col`.
-#' 
+#'
 #' @return A `ggplot` object representing the bar plot.
 #'
 #' @examples
 #' ## Assuming 'ps' is a phyloseq object and 'ps_list' is a list of phyloseq objects
 #' barplot_depths_by_sample(ps, fill = "Kingdom")
 #' barplot_depths_by_sample(ps_list, fill = "Phylum", position = "fill")
-#' 
+#'
 #' @export
 barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
   d <- if (is.list(ps)) {
@@ -30,11 +30,14 @@ barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
     setDT(psmelt(ps))
   }
   d <- d[, .(Abundance = sum(Abundance)), by = c("Sample", names(sample_data(ps)), fill)]
-  p <- ggplot(d,
+  p <- ggplot(
+    d,
     aes(
       x = if ("Sample_zzorder" %in% names(sample_data(ps))) Sample_zzorder else Sample,
       y = Abundance,
-      fill = if (is.null(fill)) NULL else if (paste(fill, "zzorder", sep = "_") %in% names(d)) .data[[paste(fill, "zzorder", sep = "_")]] else .data[[fill]])) +
+      fill = if (is.null(fill)) NULL else if (paste(fill, "zzorder", sep = "_") %in% names(d)) .data[[paste(fill, "zzorder", sep = "_")]] else .data[[fill]]
+    )
+  ) +
     geom_col(position = position, ...) +
     labs(fill = fill, x = "Sample") +
     theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5))
@@ -83,16 +86,28 @@ barplot_depths <- function(ps, group = "Sample", fill = NULL, position = "stack"
     }
   }
   d <- d[, .(Abundance = sum(Abundance)), by = c(by_cols, ordered_by_cols)]
-  p <- ggplot(d,
+  p <- ggplot(
+    d,
     aes(
-      x = if (paste(group, "zzorder", sep = "_") %in% names(d)) { .data[[paste(group, "zzorder", sep = "_")]] } else { .data[[group]] },
-      fill = if (is.null(fill)) { NULL } else if (paste(fill, "zzorder", sep = "_") %in% names(d)) { .data[[paste(fill, "zzorder", sep = "_")]] } else { .data[[fill]] },
+      x = if (paste(group, "zzorder", sep = "_") %in% names(d)) {
+        .data[[paste(group, "zzorder", sep = "_")]]
+      } else {
+        .data[[group]]
+      },
+      fill = if (is.null(fill)) {
+        NULL
+      } else if (paste(fill, "zzorder", sep = "_") %in% names(d)) {
+        .data[[paste(fill, "zzorder", sep = "_")]]
+      } else {
+        .data[[fill]]
+      },
       y = Abundance
-  )) +
+    )
+  ) +
     geom_col(position = position, ...) +
     theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5)) +
     labs(fill = fill, x = group) +
-    if (is.null(wrap)) NULL else facet_wrap(~.data[[wrap]], scale = "free_x")
+    if (is.null(wrap)) NULL else facet_wrap(~ .data[[wrap]], scale = "free_x")
   # The c() in by is necessary, otherwise group will be interpreted as a column of d (if present)
   if (all(d[, sum(Abundance), by = c(group)]$V1 == 1, na.rm = T) || position == "fill") {
     p <- p + scale_y_continuous(labels = scales::percent)
@@ -136,12 +151,24 @@ boxplot_depths <- function(ps, fill = NULL, x = fill, wrap = NULL, signif = TRUE
   } else {
     setDT(psmelt(ps))
   }
-  if (! is.factor(d[[x]])) {
+  if (!is.factor(d[[x]])) {
     d[[x]] <- factor(d[[x]])
   }
   p <- ggplot(d, aes(
-    x = if (is.null(x)) { NULL } else if (paste(x, "zzorder", sep = "_") %in% names(d)) { .data[[paste(x, "zzorder", sep = "_")]] } else { .data[[x]] },
-    fill = if (is.null(fill)) { NULL } else if (paste(fill, "zzorder", sep = "_") %in% names(d)) { .data[[paste(fill, "zzorder", sep = "_")]] } else { .data[[fill]] },
+    x = if (is.null(x)) {
+      NULL
+    } else if (paste(x, "zzorder", sep = "_") %in% names(d)) {
+      .data[[paste(x, "zzorder", sep = "_")]]
+    } else {
+      .data[[x]]
+    },
+    fill = if (is.null(fill)) {
+      NULL
+    } else if (paste(fill, "zzorder", sep = "_") %in% names(d)) {
+      .data[[paste(fill, "zzorder", sep = "_")]]
+    } else {
+      .data[[fill]]
+    },
     y = Abundance
   )) +
     geom_boxplot(...) +
@@ -171,8 +198,8 @@ boxplot_depths <- function(ps, fill = NULL, x = fill, wrap = NULL, signif = TRUE
       geom_segment(data = comps, aes(x = x2, xend = x2, y = max_y + 2 * shift_y * level, yend = max_y + 2 * shift_y * level - shift_y), inherit.aes = F) +
       geom_text(data = comps, aes(x = (x1 + x2) / 2, y = max_y + 2 * shift_y * level, label = prettyNum(`p.value`, 2)), vjust = 0, nudge_y = comps$shift_y / 2, inherit.aes = F)
   }
-  if (! is.null(wrap)) {
-    p <- p + facet_wrap(~.data[[wrap]], scale = "free_x")
+  if (!is.null(wrap)) {
+    p <- p + facet_wrap(~ .data[[wrap]], scale = "free_x")
   }
   p
 }

@@ -24,8 +24,8 @@ tblout_from_ko <- function(ko, dbs, method = "Muscle", cpu = 1, incE = 1e-6, ...
 #'
 #' This function takes aligned fasta sequences (AFA) as an input, constructs
 #' a Hidden Markov Model (HMM), and uses it to search in designated databases.
-#' 
-#' @param afa Aligned fasta sequences in string format or an object that  
+#'
+#' @param afa Aligned fasta sequences in string format or an object that
 #'  can be interpreted as such.
 #' @param cpu The number of CPU cores to use for the search process.
 #'  Defaults to 1 to ensure compatibility with all systems.
@@ -120,8 +120,8 @@ get_contigs_hits_depths <- function(depths_files, pattern, replacement, query_tb
 
 #' Retrieve depths of hits from KEGG Orthology entries across samples
 #'
-#' This function takes KEGG Orthology (KO) identifiers, a phyloseq object, a set of databases, 
-#' a control tblout formatted file, and computes 
+#' This function takes KEGG Orthology (KO) identifiers, a phyloseq object, a set of databases,
+#' a control tblout formatted file, and computes
 #' the depths of hits related to the input KOs in the provided sample set.
 #'
 #' @param kos A character vector of KEGG Orthology (KO) identifiers.
@@ -144,7 +144,7 @@ get_contigs_hits_depths <- function(depths_files, pattern, replacement, query_tb
 #' control_tblout <- "control_hits.tblout"
 #' linker <- read.csv("linker_table.csv")
 #' hit_depths <- get_hits_depths_from_kos(kos, ps, dbs, control_tblout, linker)
-#' 
+#'
 #' @export
 get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_method = "Muscle", cpu = 1, incE = 1e-6, taxrank = NULL, ...) {
   if (is.null(names(kos))) {

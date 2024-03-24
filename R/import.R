@@ -29,7 +29,7 @@ import_motus <- function(path, make_tax_table = F) {
 
 #' Import Contig Depths from Depth Files
 #'
-#' This function reads depth files, processes and normalizes their contents, and then 
+#' This function reads depth files, processes and normalizes their contents, and then
 #' generates a contig-based OTU table suitable for downstream analysis.
 #'
 #' @param depth_files A character vector of file paths, each pointing to a different depth file.
@@ -54,10 +54,10 @@ import_motus <- function(path, make_tax_table = F) {
 #' sub_pattern <- "contig"
 #' sub_replacement <- "region"
 #' otu_table <- import_contig_depths(depth_files, sub_pattern, sub_replacement)
-#' 
+#'
 #' @import phyloseq
 #' @import data.table
-#' 
+#'
 #' @export
 import_contig_depths <- function(depth_files, sub_pattern, sub_replacement) {
   contig_depths <- rbindlist(lapply(depth_files, function(depth_file) {
@@ -81,7 +81,7 @@ import_contig_depths <- function(depth_files, sub_pattern, sub_replacement) {
 #'
 #' This function takes a file path for a table of microbial abundance by MAG,
 #' where the first column is the sample (or taxa) identifier and the remaining columns
-#' are numeric depths. It reads the file, converts it into an OTU table format 
+#' are numeric depths. It reads the file, converts it into an OTU table format
 #' suitable for downstream ecological analysis.
 #'
 #' @param depths_file A string path to the file containing the microbial abundance data.
