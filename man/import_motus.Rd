@@ -7,15 +7,12 @@
 import_motus(path, make_tax_table = F)
 }
 \arguments{
-\item{path}{character string specifying the location of the file containing the mOTUs data.}
+\item{path}{A string specifying the path to the motus data file.}
 
-\item{make_tax_table}{logical indicating whether a taxonomic table should also be created and attached
-to the phyloseq object. Defaults to FALSE.}
+\item{make_tax_table}{A logical value indicating whether to create a default tax table. Default is FALSE.}
 }
 \value{
 The imported motus data. If make_tax_table is TRUE, a tax table is also returned.
-
-Returns a phyloseq object constructed from the OTU data, with an optional taxonomic table.
 }
 \description{
 Keep only the motus ID, not the tax name, which should be provided separately as colData.
