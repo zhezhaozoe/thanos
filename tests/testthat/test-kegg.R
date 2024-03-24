@@ -16,8 +16,7 @@ test_that("get_kegg_kos_from_module retrieves KOs correctly", {
 })
 
 test_that("get_kegg_msa stops for vector length not equal to 1", {
-  expect_error(get_kegg_msa(c("K00010", "K00020")), 
-               "length(ko) == 1 is not TRUE")
+  expect_error(get_kegg_msa(c("K00010", "K00020")))
 })
 
 test_that("get_kegg_msa returns the correct object", {

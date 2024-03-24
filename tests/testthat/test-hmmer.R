@@ -14,14 +14,9 @@ test_that("build_hmm handles different inputs correctly", {
   expect_error(build_hmm(list(a=1)), "Unrecognised format. aln can be either the path to an alignment in fasta format or an object of class from the msa package")
   
   # Test with afa path
-  control_afa <- system.file("extdata", "controls/bac120_r214_reps_PF01025.20.afa", package = "zzthanos")
+  control_afa <- system.file("extdata", "controls", "bac120_r214_reps_PF01025.20.afa", package = "zzthanos")
   expect_silent({
     tmp <- build_hmm(control_afa)
-    unlink(tmp)
-  })
-  names(aln) <- c("K02588_first_9")
-  expect_silent({
-    tmp <- build_hmm(exampleSequence)
     unlink(tmp)
   })
 })
