@@ -147,7 +147,10 @@ get_contigs_hits_depths <- function(depths_files, pattern, replacement, query_tb
 #' 
 #' @export
 get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_method = "Muscle", cpu = 1, incE = 1e-6, taxrank = NULL, ...) {
-  lapply(kos, function(ko) {
+  if (is.null(names(kos))) {
+    names(kos) <- kos
+  }
+  sapply(simplify = FALSE, kos, function(ko) {
     query_tblout <- tblout_from_ko(ko, dbs, method = msa_method, cpu = cpu, incE = incE, ...)
     get_hits_depths(ps, query_tblout, control_tblout, linker, taxrank = taxrank)
   })
@@ -184,7 +187,10 @@ get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_m
 #'
 #' @export
 get_contigs_hits_depths_from_kos <- function(kos, depths_files, pattern, replacement, dbs, control_tblout, linker = contigs_linker, msa_method = "Muscle", cpu = 1, incE = 1e-6, verbose = F) {
-  lapply(kos, function(ko) {
+  if (is.null(names(kos))) {
+    names(kos) <- kos
+  }
+  sapply(simplify = FALSE, kos, function(ko) {
     query_tblout <- tblout_from_ko(ko, method = msa_method, cpu = cpu, incE = incE)
     get_contigs_hits_depths(depths_files, pattern, replacement, query_tblout, control_tblout, linker = linker, verbose = verbose)
   })
