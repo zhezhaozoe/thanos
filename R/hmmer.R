@@ -1,35 +1,3 @@
-#' Retrieve and Align KEGG Gene Sequences
-#'
-#' This function retrieves amino acid sequences for genes associated with a given KEGG Orthology (KO) identifier and performs a multiple sequence alignment (MSA) on them.
-#'
-#' @param ko A character string specifying the KEGG Orthology (KO) identifier.
-#' @param ... Additional arguments passed to the `msa` function for performing the multiple sequence alignment.
-#' 
-#' @return An object of class `msa` representing the multiple sequence alignment of the retrieved sequences. The name of the KO identifier is stored as an attribute named \code{"name"} of the returned object.
-#'
-#' @examples
-#' \dontrun{
-#'   aln <- get_kegg_msa("K02533")
-#'   plot(aln)
-#' }
-#'
-#' @importFrom KEGGREST keggFind keggGet
-#' @importFrom Biostrings msa
-#' @export
-get_kegg_msa <- function(ko, ...) {
-  genes <- names(keggFind("genes", ko))
-  # keggGet expects at most 10 genes
-  batches <- split(genes, 0:(length(genes)-1) %/% 10)
-  sequence_sets <- sapply(batches, function(batch) {
-    Sys.sleep(.1)
-    keggGet(batch, "aaseq")
-  })
-  sequences <- Reduce(`c`, sequence_sets)
-  aln <- msa(sequences, ...)
-  attr(aln, "name") <- ko
-  aln
-}
-
 #' Build a Hidden Markov Model (HMM) from a sequence alignment
 #'
 #' This function takes a sequence alignment, converts it to the Stockholm format, and then uses the `hmmbuild` command
@@ -54,17 +22,27 @@ get_kegg_msa <- function(ko, ...) {
 #' @importFrom Biostrings writeXStringSet unmasked
 #' @export
 build_hmm <- function(aln) {
-  faa <- tempfile(fileext = ".faa")
-  writeXStringSet(unmasked(aln), file=faa)
+  if (is.character(aln)) {
+    if (! file.exists(aln)) {
+      stop("File doesn't exist. Please provide a valid path")
+    }
+    afa <- aln
+  } else if ("MsaAAMultipleAlignment" %in% class(aln)) {
+    afa <- tempfile(fileext = ".afa")
+    writeXStringSet(unmasked(aln), file=afa)
+  } else {
+    stop("Unrecognised format. aln can be either the path to an alignment in fasta format or an object of class from the msa package")
+  }
   sto <- tempfile(fileext = ".sto")
   hmm <- tempfile(fileext = ".hmm")
+  # works also when the attr is "names" and was set with names()
   extargs <- if (! is.null(attr(aln, "name"))) {
     c("-n", attr(aln, "name"))
   } else {
     c()
   }
-  system2("esl-reformat", c("stockholm", faa), stdout = sto)
-  system2("hmmbuild", c(extargs, hmm, sto))
+  system2("esl-reformat", c("stockholm", afa), stdout = sto)
+  system2("hmmbuild", c(extargs, hmm, sto), stdout = NULL)
   return(hmm)
 }
 
@@ -92,6 +70,9 @@ build_hmm <- function(aln) {
 #' @export
 search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6) {
   tblout <- tempfile(fileext = ".tblout")
+  if (is.null(names(dbs))) {
+    names(dbs) <- dbs
+  }
   data.table::rbindlist(lapply(dbs, function(target) {
     system2("hmmsearch", c("--tblout", tblout, "--cpu", cpu, "--incE", incE, hmm, target))
     read_hmmer_tblout(tblout)
