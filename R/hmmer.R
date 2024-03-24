@@ -4,6 +4,7 @@
 #' from the HMMER suite to build a Hidden Markov Model (HMM).
 #'
 #' @param aln A sequence alignment object. The alignment object should have an optional "name" attribute, which will be used as the name of the HMM.
+#' @param hmmer_path Base path for HMMer binaries (if not in PATH).
 #'
 #' @return The path to the file containing the generated HMM.
 #'
@@ -12,67 +13,69 @@
 #' hmm_file <- build_hmm(my_alignment)
 #' # hmm_file now contains the path to the HMM file
 #'
-#' @note This function requires the external programs `esl-reformat` and `hmmbuild` from the HMMER suite to be 
+#' @note This function requires the external programs `esl-reformat` and `hmmbuild` from the HMMER suite to be
 #'       installed and accessible in the system's PATH.
 #'
 #' @references
 #' Eddy, S.R. "HMMER: biosequence analysis using profile hidden Markov models."
 #' http://hmmer.org/
-#' 
+#'
 #' @importFrom Biostrings writeXStringSet unmasked
 #' @export
-build_hmm <- function(aln) {
+build_hmm <- function(aln, hmmer_path = "") {
   if (is.character(aln)) {
-    if (! file.exists(aln)) {
+    if (!file.exists(aln)) {
       stop("File doesn't exist. Please provide a valid path")
     }
     afa <- aln
   } else if ("MsaAAMultipleAlignment" %in% class(aln)) {
     afa <- tempfile(fileext = ".afa")
-    Biostrings::writeXStringSet(msa::unmasked(aln), file=afa)
+    Biostrings::writeXStringSet(Biostrings::unmasked(aln), file = afa)
   } else {
     stop("Unrecognised format. aln can be either the path to an alignment in fasta format or an object of class from the msa package")
   }
   sto <- tempfile(fileext = ".sto")
   hmm <- tempfile(fileext = ".hmm")
-  # works also when the attr is "names" and was set with names()
-  extargs <- if (! is.null(attr(aln, "name"))) {
+  extargs <- if (!is.null(attr(aln, "name"))) {
     c("-n", attr(aln, "name"))
   } else {
     c()
   }
-  system2("esl-reformat", c("stockholm", afa), stdout = sto)
-  system2("hmmbuild", c(extargs, hmm, sto), stdout = NULL)
+  esl_reformat_cmd <- if (nzchar(hmmer_path)) file.path(hmmer_path, "esl-reformat") else "esl-reformat"
+  hmmbuild_cmd <- if (nzchar(hmmer_path)) file.path(hmmer_path, "hmmbuild") else "hmmbuild"
+  system2(esl_reformat_cmd, c("stockholm", afa), stdout = sto)
+  system2(hmmbuild_cmd, c(extargs, hmm, sto), stdout = NULL)
   return(hmm)
 }
 
 #' Perform HMMER search across multiple databases
 #'
-#' This function executes HMMER search on a given Hidden Markov Model (HMM) file across 
-#' multiple database files (dbs). It allows the setting of the number of CPUs to be used 
-#' and the inclusion E-value threshold. The results from searching each database are combined 
+#' This function executes HMMER search on a given Hidden Markov Model (HMM) file across
+#' multiple database files (dbs). It allows the setting of the number of CPUs to be used
+#' and the inclusion E-value threshold. The results from searching each database are combined
 #' into a single data table.
 #'
 #' @param hmm A string specifying the path to the HMM file to be searched with.
 #' @param dbs A character vector, where each element is a path to a database file to be searched.
 #' @param cpu An integer indicating the number of CPUs to be used for the search. Defaults to 1.
 #' @param incE A numeric value specifying the inclusion E-value threshold. Defaults to 1e-6.
+#' @param hmmer_path Base path for HMMer binaries (if not in PATH).
 #'
-#' @return A data frame containing the combined results of the HMM searches on all databases. 
-#'         Each row represents one HMMER hit, and the data frame includes a column 'SeqFile' indicating 
+#' @return A data frame containing the combined results of the HMM searches on all databases.
+#'         Each row represents one HMMER hit, and the data frame includes a column 'SeqFile' indicating
 #'         the database file from which each hit originates.
 #'
 #' @examples
 #' hmm_file <- "your_hmm_file.hmm"
 #' db_files <- c("database1.fasta", "database2.fasta")
 #' search_results <- search_hmm(hmm_file, db_files, cpu = 2, incE = 1e-5)
-#'
 #' @export
-search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6) {
+search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6, hmmer_path = "") {
   tblout <- tempfile(fileext = ".tblout")
   if (is.null(names(dbs))) {
     names(dbs) <- dbs
   }
+  hmmsearch_cmd <- if (nzchar(hmmer_path)) file.path(hmmer_path, "hmmsearch") else "hmmsearch"
   data.table::rbindlist(lapply(dbs, function(target) {
     system2("hmmsearch", c("--tblout", tblout, "--cpu", cpu, "--incE", incE, hmm, target))
     read_hmmer_tblout(tblout)
@@ -104,7 +107,7 @@ search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6) {
 #' }
 #' # Call the get_hits_depths function without aggregation
 #' get_hits_depths_result <- get_hits_depths(ps, query_tblout, control_tblout, linker_function)
-#' 
+#'
 #' # Call the get_hits_depths function with aggregation at genus level
 #' get_hits_depths_aggregated <- get_hits_depths(ps, query_tblout, control_tblout, linker_function, taxrank = "Genus")
 #' ```
@@ -113,7 +116,7 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
   # stopifnot(length(control_tblout) == 1)
   query_ps <- prune_taxa(unique(linker(query_tblout$SeqFile, query_tblout$Target)), ps)
   control_ps <- prune_taxa(unique(linker(control_tblout$SeqFile, control_tblout$Target)), ps)
-  if (! is.null(taxrank)) {
+  if (!is.null(taxrank)) {
     query_ps <- tax_glom(query_ps, taxrank)
     taxa_names(query_ps) <- apply(tax_table(query_ps), 1, function(x) paste(na.omit(x), collapse = ";"))
     control_ps <- tax_glom(control_ps, taxrank)
