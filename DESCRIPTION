@@ -1,9 +1,9 @@
 Package: zzthanos
 Title: Analysis of metagenomes
 Version: 0.0.0.9000
-Authors@R: 
-    person("Zhe", "Zhao", "zz@qq.com", role = c("aut", "cre"), comment = c(ORCID = "YOUR-ORCID-ID"))
-    person("Federico", "Marotta", "federico.marotta@embl.de", role = c("cbt"), comment = c(ORCID = "YOUR-ORCID-ID"))
+Authors@R: c(
+    person("Zhe", "Zhao", email = "zhaozhe@zju.edu.cn", role = c("aut", "cre")),
+    person("Federico", "Marotta", role = c("ctb")))
 Description: I am Thanos, the unparalleled tool for unraveling the
     secrets of metagenomes, the guardian of microbial diversity,
     destined to sift through vast genetic landscapes to bring clarity
@@ -12,14 +12,17 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
-Imports: 
-    data.table,
+Imports:
     KEGGREST,
-    S4Vectors,
-    SummarizedExperiment
+    msa,
+    Biostrings,
+    ggplot2
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: 
-    ggplot2,
+    data.table,
     phyloseq
+VignetteBuilder: knitr
