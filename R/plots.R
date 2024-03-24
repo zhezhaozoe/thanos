@@ -23,8 +23,8 @@
 #' @export
 barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
   d <- if (is.list(ps)) {
-    rbindlist(lapply(ps_list, function(ps) {
-      setDT(psmelt(ps))
+    rbindlist(lapply(ps, function(psi) {
+      setDT(psmelt(psi))
     }), id = "Gene")
   } else {
     setDT(psmelt(ps))
@@ -68,8 +68,8 @@ barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
 #' @import data.table
 barplot_depths <- function(ps, group = "Sample", fill = NULL, position = "stack", wrap = NULL, ...) {
   d <- if (is.list(ps)) {
-    rbindlist(lapply(ps_list, function(ps) {
-      setDT(psmelt(ps))
+    rbindlist(lapply(ps, function(psi) {
+      setDT(psmelt(psi))
     }), id = "Gene")
   } else {
     setDT(psmelt(ps))
@@ -130,8 +130,8 @@ boxplot_depths <- function(ps, fill = NULL, x = fill, wrap = NULL, signif = TRUE
     stop("`wrap` is not supported with `signif`, please use patchwork instead.")
   }
   d <- if (is.list(ps)) {
-    rbindlist(lapply(ps_list, function(ps) {
-      setDT(psmelt(ps))
+    rbindlist(lapply(ps, function(psi) {
+      setDT(psmelt(psi))
     }), id = "Gene")
   } else {
     setDT(psmelt(ps))
