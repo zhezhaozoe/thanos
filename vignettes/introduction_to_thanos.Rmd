@@ -1,0 +1,197 @@
+---
+title: "Introduction to thanos"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{introduction_to_thanos}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(zzthanos)
+```
+
+# Thanos: low-code package for gene functional analisys of metagenomic data
+
+As the amount of metagenomic sequencing keeps increasing, there is a growing need for packages that help biologist make sens of the data.
+The `phyloseq` package is a powerful tool to explore microbiome profiles and it provides a convenient way to explore the taxonomic composition of metagenomic samples collected from different environments.
+However, the taxonomic profile offers only one view into the complex and multifaceded nature of biological samples.
+The gene composition of a sample offers a complementary view, one that can help answer questions such as: does carbon fixation occur in this environment?, or is methane metabolism more active in lakes or the Atlantic ocean?
+This kind of information is not always reflected in the taxonomic profiles.
+Besides, the gene functional profile can be obtained not just from the OTUs (Operatonal Taxonomic Units), but also directly from the pre-binning contigs.
+This allows us to avoid the "binning bias" and consider all of the reads in a sample, not just those that were binned into MAGs (Metagenome-Assembled Genomes).
+As the functional profiling task is somewhat more complex than taxonomic profiling, there is currently no standard way to perform this analysis.
+Tools like Prokka or the EggNog-mapper can indeed give a bulk-overview of the functional composition of a sample by annotating each gene with its hits, but researchers are often interested in more specific questions about individual genes, and require a more in-depth analysis.
+This package offers a gene-centric strategy, that allows researchers with low coding skills to delve into functional profiling of genes of interest.
+As `phyloseq` already provides convenient methods for taxonomic profiles that make sense to have for functional profiles as well, this package represents the functional depth of genes of interest as a `phyloseq` object, which can of course be annotated with taxonomic profiles and sample metadata.
+Thus, it inherits useful methods such as taxa pruning, samples merging, taxa merging, and all the other `phyloseq` goodies.
+In addition, it provides specific functions to import the data from standard metagenomic tools, and to perform the functional annotation of the samples using HMMER, as well as the visualization of the resulting profiles, all by writing as little code as possible.
+
+## Overview of the method
+
+The starting point is a gene of interest.
+In this document, whenever we say "gene" we refer to all the ortholog family of that gene.
+As such, a gene is identified by its KO (KEGG ortholog) number.
+For example, let's take the nifH gene: its KO number is K02588.
+Next, we need a depths file, which represents the abundances of OTUs across samples.
+For example, standard metagenomics pipeline (like nf-core/mags) provide automatically the sequencing depth of each MAG, defined as the number of reads that cover that MAG.
+In this case, the OTUs of interest would be the MAGs.
+While `phyloseq` is concerned with the taxonomic profile of the samples, `thanos` is concerned with the functional profile.
+For this reason, in addition to the depths files, it needs the sequences files, which associates each OTU with the protein sequences that it contains.
+This file is also easily obtained from standard metagenomics tool (e.g. Prodigal or Prokka).
+The `thanos` method consists in looking for the gene of interest in the sequences file, then map the results back to the depths, in order to get a depth profile of the gene of interest across samples.
+However, the raw depths of the sequences containing the gene of interest are not useful per se, as they are not comparable across samples due to different overall sequencing depths.
+For this reason, the raw depths are normalised by the depths of the hits of single-copy marker genes that are universally conserved (for example, the 120 marker genes from GTDB).
+This enables us to interpret the final score as the average copy number of the gene of interest in the sample.
+The package automates this analysis, provides function for convenient importing all the input files, and contains good-looking visualizations made with the `ggplot2` package.
+
+## High-level functions
+
+Thanos can deal with both raw contigs depths and binned MAGs depths.
+We believe that thinking in terms of MAGs makes it easier to understand what is going on, so we will start with this.
+As a low-code package, thanos provides high-level function that allows users to carry out most of the analysis in just a couple of steps.
+
+### MAGs workflow
+
+```{r}
+
+mags_depths_files <- system.file("extdata", "mags_example/depths/mag_depths_summary.tsv", package = "zzthanos")
+mags_sequences_files <- list.files(system.file("extdata", "mags_example/protein_sequences", package = "zzthanos"), full.names = T)
+control_afa <- system.file("extdata", "controls/bac120_r214_reps_PF01025.20.afa", package = "zzthanos")
+
+# It's important that the names of the sequences files vector be the
+# same as the taxa names of the OTUs file. In this case the taxa names are
+# like `MEGAHIT-MetaBAT2-group-2.92.fa`. The basenames of the sequences
+# files are like `MEGAHIT-MetaBAT2-group-2.92.fa.faa`, so we can rename
+# the sequences files as follows.
+names(mags_sequences_files) <- sub("\\.faa$", "", basename(mags_sequences_files))
+
+# Select the KOs of interest
+interesting_KOs <- c("K04561", "K20932")
+
+# Import MAGs depths
+mags_otus <- import_mag_depths(mags_depths_files)
+
+# Get the hits for the universal marker gene
+mags_control_tblout <- tblout_from_afa(control_afa, mags_sequences_files)
+
+# Run the analysis for the interesting genes
+mags_results <- get_hits_depths_from_kos(interesting_KOs, mags_otus, mags_sequences_files, mags_control_tblout, linker = mags_linker, nmax = 10)
+
+```
+
+The result is a list of phyloseq objects (one for each gene) with the functional scores across samples.
+
+Note that `get_hits_depths_from_kos` has a `linker` argument.
+This should be a function that maps the HMMER results to the the rownames of the OTU table.
+The tblout file generated by thanos are data.table two columns that uniquely identify a hit: `SeqName` and `Target`; the `SeqName` is the name of the sequence file, while the `Target` is the gene within that file.
+We need a way to map this hit to the taxon where it comes from in the depths OTU.
+The `linker` function takes two arguments, `SeqName` and `Target`, and should return valid taxa names in the depths files.
+In this case the rownames are like `MEGAHIT-MetaBAT2-group-2.92.fa`, so it's enough to map `(SeqName, Target)` to simply `SeqName`.
+As this is a common way to structure files for MAGs, we provide a helper function `mags_linker()` that does just that.
+There is also `contigs_linker()`, which will be introduced later.
+
+Now that we have the results, we can plot them.
+thanos has two core functions that encompass all needs: barplot_depths() and boxplot_depths().
+
+```{r}
+
+barplot_depths(results)
+
+```
+
+### Contigs workflow
+
+Contig files are usually organized differently than MAGs.
+While MAGs depths are usually combined into a single file, this would be impractical for contigs as it would result in a large size.
+Thus, standard metagenomic tools (such as METABat and CoverM) separate the depths into a file per sample.
+Thanos tries to abstract this complication away.
+
+```{r}
+
+contigs_depths_files <- list.files(system.file("extdata", "contigs_example/depths/", package = "zzthanos"), full.names = T)
+contigs_sequences_files <- list.files(system.file("extdata", "contigs_example/protein_sequences", package = "zzthanos"), full.names = T)
+control_afa <- system.file("extdata", "controls/bac120_r214_reps_PF01025.20.afa", package = "zzthanos")
+
+# It's important that the names of the sequences files vector be the
+# same as the names of the depths files. In this case, the sequence file names are like `group-1.faa.gz` while the depths file are `MEGAHIT-group-1-depth.txt.gz`. Thus, we convert both to the form `group-1`.
+names(contigs_depths_files) <- sub("MEGAHIT-(group-\\d+)-depth.txt.gz", "\\1", basename(contigs_depths_files))
+names(contigs_sequences_files) <- sub("\\.faa.gz", "", basename(contigs_sequences_files))
+
+# Import contigs depths. The sample names in the depths files
+# may contain some sample-specific fields that need to be removed.
+# For instance, in this case the sample names are of the form
+# `MEGAHIT-group-1-ERX291767.bam` (for samples from group-1) or
+# `MEGAHIT-group-2-ERX291767.bam` (for samples from group-2). We
+# need to keep only the ERX part, so we specify `sub_pattern` and
+# `sub_replacement` arguments to import_contig_depths().
+contigs_otus <- import_contig_depths(contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1")
+
+# Get the hits for the universal marker gene
+contigs_control_tblout <- tblout_from_afa(control_afa, contigs_sequences_files)
+
+# Run the analysis for the interesting genes
+contigs_results <- get_hits_depths_from_kos(interesting_KOs, contigs_otus, contigs_sequences_files, contigs_control_tblout, linker = contigs_linker, nmax = 10)
+
+```
+
+Note that, because the contig IDs need not be unique across samples, the taxa names in the resulting OTUs have the form `contigID@depthsFileName`.
+In the contigs case, since the sequence files contain the called genes for multiple contigs in the same file, we need a more complex linker in order to map the hits to the taxa.
+In the contigs tblout files, the `SeqFile` field will have the name of the sequence file, and the `Target` field will have the name of the gene in the contig that was hit.
+Typically, the called genes are of the form `contigID_sequentialGeneID`, for example, `k119_61367_1` denotes the first called gene on contig `k119_61367`.
+For this standard case, we provide a built-in linker function called contigs_linker(), which combines the sequence file name and the contig name (without the sequential gene ID) so that the hits can be mapped back to the taxa names.
+Users can write custom linkers, too, if needed; they are just functions that take `SeqFile` and `Target` as argument, and return the taxa names in the OTU table
+Users can write custom linkers, too, if needed; they are just functions that take `SeqFile` and `Target` as argument, and return the corresponding taxa names in the OTU table.
+
+When the number of samples is large and the computational resources are low, reading all of the contig depths in memory can be problematic.
+For this reason, we provide an alternative function, get_contigs_hits_depths_from_ko(), which performs the calculations sample by sample and then aggregate the results.
+The usage of this function is similar to get_hits_depths_from_ko(), but it takes the arguments of import_contig_depths() instead of the phyloseq object:
+
+```{r}
+
+# contigs_otus <- import_contig_depths(contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1")
+# results <- get_hits_depths_from_kos(interesting_KOs, contigs_otus, contigs_sequences_files, control_tblout, linker = contigs_linker, nmax = 10)
+
+# The above two functions are combined into the following call with identical results
+contigs_results_memeff <- get_contigs_hits_depths_from_kos(interesting_KOs, contigs_depths_files, sub_pattern, sub_replacement, contigs_sequences_files, control_tblout, linker = contigs_linker, nmax = 10)
+```
+
+## Generating "control" results
+
+The thanos functions that compute the depth profiles accept a `control_tblout` argument, which is a data.table containing the results of HMMER for the control genes.
+Different use cases may require different controls, so in this section we show how these objects can be generated.
+The important part is that a control should be a single-copy universal marker gene, such as one of the 120 GTDB bacterial markers.
+In the following, `sequence_files` refers to a vector of paths to sequence files, either for MAGs or for contigs.
+
+* Generating from a KO
+```
+ko <- "K02588"
+control_tblout <- tblout_from_ko(ko, sequence_files)
+```
+
+* Generating from an existing multiple sequence alignment file
+```
+aln <- system.file("extdata", "controls/bac120_r214_reps_PF01025.20.afa", package = "zzthanos")
+control_tblout <- tblout_from_afa(aln, sequence_files)
+```
+
+* Generating from a multiple sequence alignment object from the `msa` Bioconductor package
+```
+mySequenceFile <- system.file("examples", "exampleAA.fasta", package="msa")
+mySequences <- readAAStringSet(mySequenceFile)
+aln <- msa(mySequences)
+control_tblout <- tblout_from_afa(aln, sequence_files)
+```
+
+* Generating from an existing HMM file
+```
+hmm <- "/path/to/profile.hmm"
+control_tblout <- search_hmm(hmm, sequence_files)
+```
