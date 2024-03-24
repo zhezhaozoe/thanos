@@ -1,6 +1,27 @@
-# fill by gene for plot 5.
-# this function (as opposed to *_by_sample_group) keeps the sample_data, so it's possible to do + facet_wrap(~whatever) afterwards.
-barplot_depth_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
+#' Plots aggregated abundance by sample in barplot
+#'
+#' This function plots the aggregated abundance of genes by sample and allows for
+#' customization of the filling color of the bars. Unlike `barplot_depths()`,
+#' this function retains the sample data, enabling the use of `facet_wrap(~whatever)`
+#' for further customization.
+#'
+#' @param ps A phyloseq object or a list of such objects. If a list is provided, it
+#'   merges the data from all objects.
+#' @param fill The variable by which to fill the bars. If `NULL`, bars won't be
+#'   filled according to a variable. The default is `NULL`.
+#' @param position The position adjustment of bars. Can be "stack", "fill", or
+#'   others as defined by `ggplot2`. Default is "stack".
+#' @param ... Additional arguments passed to `geom_col`.
+#' 
+#' @return A `ggplot` object representing the bar plot.
+#'
+#' @examples
+#' ## Assuming 'ps' is a phyloseq object and 'ps_list' is a list of phyloseq objects
+#' barplot_depths_by_sample(ps, fill = "Kingdom")
+#' barplot_depths_by_sample(ps_list, fill = "Phylum", position = "fill")
+#' 
+#' @export
+barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
   d <- if (is.list(ps)) {
     rbindlist(lapply(ps_list, function(ps) {
       setDT(psmelt(ps))
@@ -23,11 +44,29 @@ barplot_depth_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
   p
 }
 
-# barplot_depth(ps_list, group = "group", fill = "Gene")
-# barplot_depth(ps_list, group = "group", fill = "Phylum")
-# barplot_depth(ps_list, group = "Gene", fill = "Phylum")
-# barplot_depth(ps_list, group = c("Gene", "group"), fill = "Phylum") + facet_wrap(~group, scales = "free")
-barplot_depth <- function(ps, group = "Sample", fill = NULL, position = "stack", wrap = NULL, ...) {
+#' Create a Bar Plot of Abundances from Phyloseq Data with Grouping and Fill Options
+#'
+#' @param ps A phyloseq object or a list of phyloseq objects. If a list is provided, all objects are combined.
+#' @param group The name of the column to be used for grouping on the x-axis. Defaults to "Sample".
+#' @param fill (Optional) The name of the column to apply a fill color to bars. NULL by default, which results in no fill.
+#' @param position Determines how to position bars. "stack" stacks bars on top of each other, "dodge" places them side by side. Defaults to "stack".
+#' @param wrap (Optional) The name of a column to be used for facetting the plot into separate panels.
+#' @param ... Additional arguments passed on to `geom_col` from `ggplot2`.
+#'
+#' @return A `ggplot` object representing the bar plot. Can be printed or modified further.
+#'
+#' @examples
+#' data("GlobalPatterns", package = "phyloseq")
+#' barplot_depths(GlobalPatterns, group = "SampleType", fill = "Phylum")
+#' barplot_depth(ps_list, group = "group", fill = "Gene")
+#' barplot_depth(ps_list, group = "group", fill = "Phylum")
+#' barplot_depth(ps_list, group = "Gene", fill = "Phylum")
+#' barplot_depth(ps_list, group = c("Gene", "group"), fill = "Phylum") + facet_wrap(~group, scales = "free")
+#'
+#'
+#' @import ggplot2
+#' @import data.table
+barplot_depths <- function(ps, group = "Sample", fill = NULL, position = "stack", wrap = NULL, ...) {
   d <- if (is.list(ps)) {
     rbindlist(lapply(ps_list, function(ps) {
       setDT(psmelt(ps))
@@ -61,7 +100,32 @@ barplot_depth <- function(ps, group = "Sample", fill = NULL, position = "stack",
   p
 }
 
-boxplot_depth <- function(ps, fill = NULL, x = fill, wrap = NULL, signif = TRUE, test = "wilcox.test", ...) {
+#' Generate a Boxplot with Significance Indicators
+#'
+#' @param ps A phyloseq object or a list of phyloseq objects. The function melts the data for plotting.
+#' @param fill The name of the variable to use for filling boxes. Can be set to NULL. Defaults to NULL.
+#' @param x The name of the variable to use for the x-axis. Inherits the value of `fill` by default.
+#' @param wrap An optional string specifying a variable name to wrap the plot into multiple panels. Not supported alongside `signif`.
+#' @param signif Logical, indicating whether to perform and display significance testing between groups. Defaults to TRUE.
+#' @param test The name of the statistical test function to use as a character string. Defaults to "wilcox.test".
+#' @param ... Additional arguments passed to `geom_boxplot`.
+#'
+#' @details This function creates a boxplot of abundance data from a given phyloseq object or a list of phyloseq objects. When `signif` is TRUE, it automatically calculates and displays significance levels between the comparisons of boxplots based on the specified statistical test. `wrap` parameter allows creating multiple panels but is not compatible with `signif` parameter. If using `signif`, consider using `patchwork` for combining multiple plots.
+#'
+#' @return A ggplot object representing the boxplot with or without significance indicators.
+#'
+#' @note Using `wrap` together with `signif` will result in an error message as they are not compatible. Use `patchwork` package for layout management in such cases.
+#'
+#' @examples
+#' # Assuming `ps` is a phyloseq object with proper setup:
+#' boxplot_depths(ps, fill = "SampleType", x = "Condition", signif = TRUE)
+#' # For multiple phyloseq objects in a list and using a Wilcoxon test:
+#' boxplot_depths(list(ps1, ps2), fill = "SampleType", x = "Condition", test = "wilcox.test", signif = TRUE)
+#'
+#' @import ggplot2
+#' @import data.table
+#' @export
+boxplot_depths <- function(ps, fill = NULL, x = fill, wrap = NULL, signif = TRUE, test = "wilcox.test", ...) {
   if (!is.null(wrap) && isTRUE(signif)) {
     stop("`wrap` is not supported with `signif`, please use patchwork instead.")
   }
