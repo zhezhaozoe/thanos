@@ -6,7 +6,7 @@
 #' @param nmax The maximum number of genes to include in the alignment (Default: no limit).
 #' @param ... Additional arguments passed to the `msa` function for performing the multiple sequence alignment.
 #' 
-#' @return An object of class `msa` representing the multiple sequence alignment of the retrieved sequences. The name of the KO identifier is stored as an attribute named \code{"name"} of the returned object.
+#' @return An object of class `msa` representing the multiple sequence alignment of the retrieved sequences. The name of the KO identifier (or, if NULL, the KO identifier itself) is stored as an attribute named \code{"name"} of the returned object.
 #'
 #' @examples
 #' \dontrun{
@@ -31,7 +31,7 @@ get_kegg_msa <- function(ko, nmax = Inf, method = "Muscle", ...) {
   })
   sequences <- Reduce(`c`, sequence_sets)
   aln <- msa::msa(sequences, method = method, ...)
-  attr(aln, "name") <- ko
+  attr(aln, "name") <- if (!is.null(names(ko))) names(ko) else ko
   aln
 }
 

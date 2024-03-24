@@ -3,7 +3,7 @@
 #' This function takes a sequence alignment, converts it to the Stockholm format, and then uses the `hmmbuild` command
 #' from the HMMER suite to build a Hidden Markov Model (HMM).
 #'
-#' @param aln A sequence alignment object. The alignment object should have an optional "name" attribute, which will be used as the name of the HMM.
+#' @param aln A sequence alignment object. The alignment object can have a "name" attribute, which will be used as the name of the HMM.
 #' @param hmmer_path Base path for HMMer binaries (if not in PATH).
 #'
 #' @return The path to the file containing the generated HMM.
@@ -36,6 +36,7 @@ build_hmm <- function(aln, hmmer_path = "") {
   }
   sto <- tempfile(fileext = ".sto")
   hmm <- tempfile(fileext = ".hmm")
+  # Works both for "name" attr and names()
   extargs <- if (!is.null(attr(aln, "name"))) {
     c("-n", attr(aln, "name"))
   } else {
