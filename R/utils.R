@@ -36,8 +36,6 @@ make_motus_tax_table <- function(path, level = "mOTU") {
 #' motus_table <- read.csv("your_motus_table.csv", row.names = 1)
 #' gtdb_tax_table <- make_motus_tax_table_from_gtdb(motus_table, gtdb_map_path)
 #'
-#' @importFrom readr fread
-#' @importFrom stats setNames
 #' @export
 #'
 #' @note Please ensure the GTDB mapping file is available at the specified path. For mOTUs3,
