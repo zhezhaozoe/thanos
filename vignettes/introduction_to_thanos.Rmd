@@ -56,7 +56,7 @@ In this case, the OTUs of interest would be the MAGs.
 While `phyloseq` is concerned with the taxonomic profile of the samples, `thanos` is concerned with the functional profile.
 For this reason, in addition to the depths files, it needs the sequences files, which associates each OTU with the protein sequences that it contains.
 This file is also easily obtained from standard metagenomics tool (e.g. Prodigal or Prokka).
-The `thanos` method consists in looking for the gene of interest in the sequences file, then map the results back to the depths, in order to get a depth profile of the gene of interest across samples.
+The `thanos` method consists in looking for the gene of interest in the sequences file, then map the results back to the OTUs, in order to get a depth profile of the gene of interest across samples.
 However, the raw depths of the sequences containing the gene of interest are not useful per se, as they are not comparable across samples due to different overall sequencing depths.
 For this reason, the raw depths are normalised by the depths of the hits of single-copy marker genes that are universally conserved (for example, the 120 marker genes from GTDB).
 This enables us to interpret the final score as the average copy number of the gene of interest in the sample.
@@ -78,7 +78,6 @@ The data is too large to be shared with the package, so this vignette has been p
 
 mags_depths_files <- "../inst/extdata/mags_example/depths/mag_depths_summary.tsv"
 mags_sequences_files <- list.files("../inst/extdata/mags_example/protein_sequences", full.names = T)
-mags_sequences_files <- mags_sequences_files[sample(length(mags_sequences_files), 50)]
 control_afa <- "../inst/extdata/controls/bac120_r214_reps_PF01025.20.afa"
 
 # It's important that the names of the sequences files vector be the
@@ -205,10 +204,10 @@ While MAGs depths are usually combined into a single file, this would be impract
 Thus, standard metagenomic tools (such as METABat and CoverM) separate the depths into a file per sample.
 Thanos tries to abstract this complication away.
 
-```{r contigs-workflow-prep}
+```{r contigs-workflow-prep, cache = T}
 
-contigs_depths_files <- list.files("../inst/extdata/contigs_example/depths/", full.names = T)[1:2]
-contigs_sequences_files <- list.files("../inst/extdata/contigs_example/protein_sequences", full.names = T)[1:2]
+contigs_depths_files <- list.files("../inst/extdata/contigs_example/depths/", full.names = T)
+contigs_sequences_files <- list.files("../inst/extdata/contigs_example/protein_sequences", full.names = T)
 control_afa <- "../inst/extdata/controls/bac120_r214_reps_PF01025.20.afa"
 
 # It's important that the names of the sequences files vector be the
@@ -244,6 +243,8 @@ Typically, the called genes are of the form `contigID_sequentialGeneID`, for exa
 For this standard case, we provide a built-in linker function called contigs_linker(), which combines the sequence file name and the contig name (without the sequential gene ID) so that the hits can be mapped back to the taxa names.
 Users can write custom linkers, too, if needed; they are just functions that take `SeqFile` and `Target` as argument, and return the taxa names in the OTU table
 Users can write custom linkers, too, if needed; they are just functions that take `SeqFile` and `Target` as argument, and return the corresponding taxa names in the OTU table.
+Importantly, when the contig depths are imported, they are multiplied by the contig length so that they can be interpreted as the amount of reads that fall within each contig.
+They are also normalized by the total depth of each sample.
 
 When the number of samples is large and the computational resources are low, reading all of the contig depths in memory can be problematic.
 For this reason, we provide an alternative function, get_contigs_hits_depths_from_ko(), which performs the calculations sample by sample and then aggregate the results.
@@ -252,14 +253,14 @@ The usage of this function is similar to get_hits_depths_from_ko(), but it takes
 ```{r contigs-workflow-memeff, cache = T}
 
 # contigs_otus <- import_contig_depths(contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1")
-# results <- get_hits_depths_from_kos(interesting_KOs, contigs_otus, contigs_sequences_files, control_tblout, linker = contigs_linker, nmax = 10)
+# results <- get_hits_depths_from_kos(interesting_KOs, contigs_otus, contigs_sequences_files, contigs_control_tblout, linker = contigs_linker, nmax = 10)
 
 # The above two functions are combined into the following call with identical results
 contigs_results_memeff <- get_contigs_hits_depths_from_kos(interesting_KOs, contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1", contigs_sequences_files, contigs_control_tblout, linker = contigs_linker, nmax = 10)
 
 ```
 
-And we can of course visualise the results.
+And we can of course visualise the results (more complex visualizations are also possible, see the previous sections for examples).
 
 ```{r contigs-workflow-memeff-viz}
 
