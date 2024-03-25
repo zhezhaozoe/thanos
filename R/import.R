@@ -63,7 +63,10 @@ import_contig_depths <- function(depth_files, sub_pattern, sub_replacement) {
   contig_depths <- rbindlist(lapply(depth_files, function(depth_file) {
     d <- fread(depth_file)
     bam_var <- grep("bam-var", names(d), value = T)
-    new_names <- sub(sub_pattern, sub_replacement, grep("bam-var", names(d), value = T, invert = T))
+    new_names <- sub(
+      sub_pattern,
+      sub_replacement,
+      grep("bam-var", names(d), value = T, invert = T))
     setNames(d[, !bam_var, with = F], new_names)
   }), use.names = T, id = "AssemblyGroup")
   contig_attributes <- as.matrix(contig_depths[, .(contigLen, totalAvgDepth)])
@@ -71,7 +74,8 @@ import_contig_depths <- function(depth_files, sub_pattern, sub_replacement) {
     avg_depth * contig_depths$contigLen / sum(avg_depth * contig_depths$contigLen)
   }), .SDcols = !c("contigName", "AssemblyGroup", "contigLen", "totalAvgDepth")])
   # contig_depths$totalAvgDepth * contig_depths
-  rownames(contig_matrix) <- rownames(contig_attributes) <- paste(contig_depths$contigName, contig_depths$AssemblyGroup, sep = "@")
+  rownames(contig_matrix) <- rownames(contig_attributes) <- paste(
+    contig_depths$contigName, contig_depths$AssemblyGroup, sep = "@")
   otu_table(contig_matrix, taxa_are_rows = T)
   # Taxonomy table is expected to be characters, so we can't use contig_attributes... too bad.
   # phyloseq(otu_table(contig_matrix, taxa_are_rows = T), tax_table(contig_attributes))

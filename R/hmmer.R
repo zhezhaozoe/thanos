@@ -42,8 +42,16 @@ build_hmm <- function(aln, hmmer_path = "") {
   } else {
     c()
   }
-  esl_reformat_cmd <- if (nzchar(hmmer_path)) file.path(hmmer_path, "esl-reformat") else "esl-reformat"
-  hmmbuild_cmd <- if (nzchar(hmmer_path)) file.path(hmmer_path, "hmmbuild") else "hmmbuild"
+  esl_reformat_cmd <- if (nzchar(hmmer_path)) {
+    file.path(hmmer_path, "esl-reformat")
+  } else {
+    "esl-reformat"
+  }
+  hmmbuild_cmd <- if (nzchar(hmmer_path)) {
+    file.path(hmmer_path, "hmmbuild")
+  } else {
+    "hmmbuild"
+  }
   system2(esl_reformat_cmd, c("stockholm", afa), stdout = sto)
   system2(hmmbuild_cmd, c(extargs, hmm, sto), stdout = NULL)
   return(hmm)
@@ -76,9 +84,19 @@ search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6, hmmer_path = "") {
   if (is.null(names(dbs))) {
     names(dbs) <- dbs
   }
-  hmmsearch_cmd <- if (nzchar(hmmer_path)) file.path(hmmer_path, "hmmsearch") else "hmmsearch"
+  hmmsearch_cmd <- if (nzchar(hmmer_path)) {
+    file.path(hmmer_path, "hmmsearch")
+  } else {
+    "hmmsearch"
+  }
   data.table::rbindlist(lapply(dbs, function(target) {
-    system2("hmmsearch", c("--tblout", tblout, "--cpu", cpu, "--incE", incE, hmm, target))
+    system2("hmmsearch", c(
+        "--tblout", tblout,
+        "--cpu", cpu,
+        "--incE", incE,
+        hmm,
+        target),
+      stdout = NULL)
     read_hmmer_tblout(tblout)
   }), id = "SeqFile")
 }
