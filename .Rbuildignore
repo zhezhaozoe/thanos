@@ -1,7 +1,6 @@
 ^LICENSE\.md$
 ^.*\.Rproj$
 ^\.Rproj\.user$
-inst/extdata/controls
 inst/extdata/mags_example
 inst/extdata/contigs_example
 inst/extdata/motus_example

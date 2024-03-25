@@ -3,4 +3,8 @@
 .Rdata
 .httr-oauth
 .DS_Store
-inst/doc
+inst/extdata/mags_example
+inst/extdata/contigs_example
+inst/extdata/motus_example
+*_files
+*_cache

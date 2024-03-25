@@ -287,7 +287,7 @@ faa <- "/path/to/sequences.faa"
 control_tblout <- tblout_from_faa(faa, sequence_files)
 ```
 
-* Generating from an existing multiple sequence alignment file
+* Generating from an existing multiple sequence alignment file (this package provides one from the GTDB markers)
 ```
 aln <- system.file("extdata", "controls/bac120_r214_reps_PF01025.20.afa", package = "zzthanos")
 control_tblout <- tblout_from_afa(aln, sequence_files)

@@ -26,3 +26,4 @@ Depends:
     data.table,
     phyloseq
 VignetteBuilder: knitr
+Config/build/clean-inst-doc: FALSE
