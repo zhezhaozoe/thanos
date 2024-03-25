@@ -75,8 +75,9 @@ tblout_from_afa <- function(afa, dbs, cpu = 1, incE = 1e-6) {
 #'
 #' @export
 #' @importFrom Biostrings readAAStringSet
-#' @importFrom msa msa
-tblout_from_faa <- function(faa, dbs, method = "Muscle", cpu = 1, incE = 1e-6, ...) {
+#' @import msa
+tblout_from_faa <- function(faa, dbs, method = "Muscle",
+cpu = 1, incE = 1e-6, ...) {
   mySequences <- Biostrings::readAAStringSet(faa)
   aln <- msa::msa(mySequences, method = method, ...)
   tblout_from_afa(aln, cpu = cpu, incE = incE)
@@ -88,8 +89,8 @@ tblout_from_faa <- function(faa, dbs, method = "Muscle", cpu = 1, incE = 1e-6, .
 #' Contig depths files are typically large (several hundred MB per sample), therefore, with many samples, it's impractical to load all of the data at once in memory. This function provides a way to calculate the depths sample-wise, to avoid storing all the data in memory.
 #'
 #' @param depths_files A character vector of file paths to the depths files.
-#' @param pattern Character. A regular expression pattern to match in contigs names within the depth files.
-#' @param replacement Character. A string to replace the matched pattern in contig names.
+#' @param sub_pattern Character. A regular expression pattern to match in contigs names within the depth files.
+#' @param sub_replacement Character. A string to replace the matched pattern in contig names.
 #' @param query_tblout File path to the tblout file containing query hits.
 #' @param control_tblout File path to the tblout file containing control hits.
 #' @param linker A function to link contig identifiers between the query and control tblout files.
@@ -98,7 +99,9 @@ tblout_from_faa <- function(faa, dbs, method = "Muscle", cpu = 1, incE = 1e-6, .
 #' @examples
 #' get_contigs_hits_depths(c("depths1.txt", "depths2.txt"), "_contig", "_sequence", "query.tblout", "control.tblout")
 #' @export
-get_contigs_hits_depths <- function(depths_files, pattern, replacement, query_tblout, control_tblout, linker = contigs_linker, verbose = F) {
+get_contigs_hits_depths <- function(depths_files,
+sub_pattern, sub_replacement, query_tblout, control_tblout,
+linker = contigs_linker, verbose = F) {
   # We use seq_along here because iterating over the depth_files directly
   # the name attribute is lost, and the name is used in import_contig_depths
   mers <- lapply(seq_along(depths_files), function(i) {
@@ -106,8 +109,12 @@ get_contigs_hits_depths <- function(depths_files, pattern, replacement, query_tb
     if (isTRUE(verbose)) {
       message(cdf)
     }
-    otus <- import_contig_depths(cdf, pattern, replacement)
-    get_hits_depths(otus, query_tblout, control_tblout, linker, phyloseq = F)
+    otus <- import_contig_depths(cdf, sub_pattern, sub_replacement)
+    get_hits_depths(
+      otus,
+      query_tblout, control_tblout,
+      linker,
+      phyloseq = F)
   })
   mer <- rbindlist(mers, use.names = T)[, lapply(.SD, sum), by = "ID"]
   res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
@@ -146,13 +153,25 @@ get_contigs_hits_depths <- function(depths_files, pattern, replacement, query_tb
 #' hit_depths <- get_hits_depths_from_kos(kos, ps, dbs, control_tblout, linker)
 #'
 #' @export
-get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_method = "Muscle", cpu = 1, incE = 1e-6, taxrank = NULL, ...) {
+get_hits_depths_from_kos <- function(kos, ps, dbs,
+control_tblout, linker, msa_method = "Muscle",
+cpu = 1, incE = 1e-6, taxrank = NULL, ...) {
   if (is.null(names(kos))) {
     names(kos) <- kos
   }
   sapply(simplify = FALSE, kos, function(ko) {
-    query_tblout <- tblout_from_ko(ko, dbs, method = msa_method, cpu = cpu, incE = incE, ...)
-    get_hits_depths(ps, query_tblout, control_tblout, linker, taxrank = taxrank)
+    query_tblout <- tblout_from_ko(
+      ko,
+      dbs,
+      method = msa_method,
+      cpu = cpu,
+      incE = incE,
+      ...)
+    get_hits_depths(
+      ps,
+      query_tblout, control_tblout,
+      linker,
+      taxrank = taxrank)
   })
 }
 
@@ -163,8 +182,8 @@ get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_m
 #'
 #' @param kos A character vector of KEGG Orthology (KO) identifiers.
 #' @param depths_files A character vector indicating the paths to depths files.
-#' @param pattern A regex pattern used to match and extract contig names from the depths files.
-#' @param replacement A character string to replace in the extracted contig names, based on the `pattern` argument.
+#' @param sub_pattern A regex pattern used to match and extract contig names from the depths files.
+#' @param sub_replacement A character string to replace in the extracted contig names, based on the `sub_pattern` argument.
 #' @param dbs A not used parameter in the current implementation.
 #' @param control_tblout Character string indicating the path to the tblout file from the control.
 #' @param linker A function that links contig names to their hits and depths. Defaults to `contigs_linker`.
@@ -179,19 +198,22 @@ get_hits_depths_from_kos <- function(kos, ps, dbs, control_tblout, linker, msa_m
 #' \dontrun{
 #' kos <- c("K00001", "K00002")
 #' depths_files <- c("sample1.depths", "sample2.depths")
-#' pattern <- "_(\d+)$"
-#' replacement <- ""
+#' sub_pattern <- "_(\d+)$"
+#' sub_replacement <- ""
 #' control_tblout <- "control.tblout"
-#' results <- get_contigs_hits_depths_from_kos(kos, depths_files, pattern, replacement, NULL, control_tblout)
+#' results <- get_contigs_hits_depths_from_kos(kos, depths_files, sub_pattern, sub_replacement, NULL, control_tblout)
 #' }
 #'
 #' @export
-get_contigs_hits_depths_from_kos <- function(kos, depths_files, pattern, replacement, dbs, control_tblout, linker = contigs_linker, msa_method = "Muscle", cpu = 1, incE = 1e-6, verbose = F) {
+get_contigs_hits_depths_from_kos <- function(kos, depths_files,
+sub_pattern, sub_replacement, dbs,
+control_tblout, linker = contigs_linker,
+msa_method = "Muscle", cpu = 1, incE = 1e-6, verbose = F, ...) {
   if (is.null(names(kos))) {
     names(kos) <- kos
   }
   sapply(simplify = FALSE, kos, function(ko) {
-    query_tblout <- tblout_from_ko(ko, method = msa_method, cpu = cpu, incE = incE)
-    get_contigs_hits_depths(depths_files, pattern, replacement, query_tblout, control_tblout, linker = linker, verbose = verbose)
+    query_tblout <- tblout_from_ko(ko, dbs, method = msa_method, cpu = cpu, incE = incE, ...)
+    get_contigs_hits_depths(depths_files, sub_pattern, sub_replacement, query_tblout, control_tblout, linker = linker, verbose = verbose)
   })
 }
