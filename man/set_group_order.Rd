@@ -7,17 +7,17 @@
 set_group_order(ps, group, levels)
 }
 \arguments{
-\item{ps}{A phyloseq object containing sample data.}
+\item{ps}{A phyloseq object (or list thereof) containing sample data.}
 
 \item{group}{The name of the group (column in the sample data) to set the order for. If the group is "Sample", the function treats it as a special case.}
 
 \item{levels}{A vector of values defining the new order of the group.}
 }
 \value{
-A modified phyloseq object with the new order set for the specified group.
+A modified phyloseq object (or list thereof) with the new order set for the specified group.
 }
 \description{
-This function sets a custom ordering for a specified group within the sample data of a phyloseq object. The new ordering is stored in a new column within the sample data, distinguishing between a special case for the "Sample" group and other groups.
+This function sets a custom ordering for a specified group within the sample data of a phyloseq object (or list thereof). The new ordering is stored in a new column within the sample data, distinguishing between a special case for the "Sample" group and other groups.
 }
 \examples{
 # Given a phyloseq object `ps`, set a new order for the "Sample" group

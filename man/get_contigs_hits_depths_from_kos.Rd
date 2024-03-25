@@ -7,15 +7,16 @@
 get_contigs_hits_depths_from_kos(
   kos,
   depths_files,
-  pattern,
-  replacement,
+  sub_pattern,
+  sub_replacement,
   dbs,
   control_tblout,
   linker = contigs_linker,
   msa_method = "Muscle",
   cpu = 1,
   incE = 1e-06,
-  verbose = F
+  verbose = F,
+  ...
 )
 }
 \arguments{
@@ -23,9 +24,9 @@ get_contigs_hits_depths_from_kos(
 
 \item{depths_files}{A character vector indicating the paths to depths files.}
 
-\item{pattern}{A regex pattern used to match and extract contig names from the depths files.}
+\item{sub_pattern}{A regex pattern used to match and extract contig names from the depths files.}
 
-\item{replacement}{A character string to replace in the extracted contig names, based on the \code{pattern} argument.}
+\item{sub_replacement}{A character string to replace in the extracted contig names, based on the \code{sub_pattern} argument.}
 
 \item{dbs}{A not used parameter in the current implementation.}
 
@@ -52,10 +53,10 @@ specified depths files.
 \dontrun{
 kos <- c("K00001", "K00002")
 depths_files <- c("sample1.depths", "sample2.depths")
-pattern <- "_(\d+)$"
-replacement <- ""
+sub_pattern <- "_(\d+)$"
+sub_replacement <- ""
 control_tblout <- "control.tblout"
-results <- get_contigs_hits_depths_from_kos(kos, depths_files, pattern, replacement, NULL, control_tblout)
+results <- get_contigs_hits_depths_from_kos(kos, depths_files, sub_pattern, sub_replacement, NULL, control_tblout)
 }
 
 }

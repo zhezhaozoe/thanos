@@ -4,10 +4,12 @@
 \alias{build_hmm}
 \title{Build a Hidden Markov Model (HMM) from a sequence alignment}
 \usage{
-build_hmm(aln)
+build_hmm(aln, hmmer_path = "")
 }
 \arguments{
-\item{aln}{A sequence alignment object. The alignment object should have an optional "name" attribute, which will be used as the name of the HMM.}
+\item{aln}{A sequence alignment object. The alignment object can have a "name" attribute, which will be used as the name of the HMM.}
+
+\item{hmmer_path}{Base path for HMMer binaries (if not in PATH).}
 }
 \value{
 The path to the file containing the generated HMM.

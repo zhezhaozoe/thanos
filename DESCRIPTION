@@ -1,4 +1,4 @@
-Package: zzthanos
+Package: thanos
 Title: Analysis of metagenomes
 Version: 0.0.0.9000
 Authors@R: c(

@@ -1,13 +1,17 @@
 ---
 title: "Introduction to thanos"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    fig_width: 7
+    fig_height: 4
+    fig_align: center
 vignette: >
-  %\VignetteIndexEntry{introduction_to_thanos}
+  %\VignetteIndexEntry{Introduction to thanos}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r init, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -15,23 +19,29 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(zzthanos)
+
+library(thanos)
+library(ggplot2)
+
+theme_set(theme_bw())
+theme_update(legend.position = "bottom")
+
 ```
 
 # Thanos: low-code package for gene functional analisys of metagenomic data
 
-As the amount of metagenomic sequencing keeps increasing, there is a growing need for packages that help biologist make sens of the data.
+As the amount of metagenomic sequencing keeps increasing, there is a growing need for tools that help biologists make sense of the data.
 The `phyloseq` package is a powerful tool to explore microbiome profiles and it provides a convenient way to explore the taxonomic composition of metagenomic samples collected from different environments.
 However, the taxonomic profile offers only one view into the complex and multifaceded nature of biological samples.
-The gene composition of a sample offers a complementary view, one that can help answer questions such as: does carbon fixation occur in this environment?, or is methane metabolism more active in lakes or the Atlantic ocean?
+The gene composition of a sample offers a complementary view, one that can help answer questions such as: does carbon fixation occur in this environment?, or is methane metabolism more active in lakes or in the Atlantic ocean?
 This kind of information is not always reflected in the taxonomic profiles.
-Besides, the gene functional profile can be obtained not just from the OTUs (Operatonal Taxonomic Units), but also directly from the pre-binning contigs.
+Besides, the gene functional profile can be obtained not just from the OTUs (Operatonal Taxonomic Units), but also directly from the contigs.
 This allows us to avoid the "binning bias" and consider all of the reads in a sample, not just those that were binned into MAGs (Metagenome-Assembled Genomes).
 As the functional profiling task is somewhat more complex than taxonomic profiling, there is currently no standard way to perform this analysis.
 Tools like Prokka or the EggNog-mapper can indeed give a bulk-overview of the functional composition of a sample by annotating each gene with its hits, but researchers are often interested in more specific questions about individual genes, and require a more in-depth analysis.
 This package offers a gene-centric strategy, that allows researchers with low coding skills to delve into functional profiling of genes of interest.
-As `phyloseq` already provides convenient methods for taxonomic profiles that make sense to have for functional profiles as well, this package represents the functional depth of genes of interest as a `phyloseq` object, which can of course be annotated with taxonomic profiles and sample metadata.
-Thus, it inherits useful methods such as taxa pruning, samples merging, taxa merging, and all the other `phyloseq` goodies.
+As `phyloseq` already provides convenient methods that are also applicable to functional profiles, this package represents the functional depth of genes of interest as a `phyloseq` object, which can of course be annotated with taxonomic profiles and sample metadata.
+Thus, it inherits useful methods such as taxa pruning, samples merging, taxa merging, and all the other `phyloseq` features.
 In addition, it provides specific functions to import the data from standard metagenomic tools, and to perform the functional annotation of the samples using HMMER, as well as the visualization of the resulting profiles, all by writing as little code as possible.
 
 ## Overview of the method
@@ -58,13 +68,18 @@ Thanos can deal with both raw contigs depths and binned MAGs depths.
 We believe that thinking in terms of MAGs makes it easier to understand what is going on, so we will start with this.
 As a low-code package, thanos provides high-level function that allows users to carry out most of the analysis in just a couple of steps.
 
+In the following chunks, we set out to explore a subset of the metagenomics data from the [Tara Ocean project](https://www.nature.com/articles/s41579-020-0364-5).
+The samples (publically available) have been processed with the [nf-core/mag](https://nf-co.re/mag) pipeline.
+The data is too large to be shared with the package, so this vignette has been precompiled.
+
 ### MAGs workflow
 
-```{r}
+```{r mags-workflow, cache = T}
 
-mags_depths_files <- system.file("extdata", "mags_example/depths/mag_depths_summary.tsv", package = "zzthanos")
-mags_sequences_files <- list.files(system.file("extdata", "mags_example/protein_sequences", package = "zzthanos"), full.names = T)
-control_afa <- system.file("extdata", "controls/bac120_r214_reps_PF01025.20.afa", package = "zzthanos")
+mags_depths_files <- "../inst/extdata/mags_example/depths/mag_depths_summary.tsv"
+mags_sequences_files <- list.files("../inst/extdata/mags_example/protein_sequences", full.names = T)
+mags_sequences_files <- mags_sequences_files[sample(length(mags_sequences_files), 50)]
+control_afa <- "../inst/extdata/controls/bac120_r214_reps_PF01025.20.afa"
 
 # It's important that the names of the sequences files vector be the
 # same as the taxa names of the OTUs file. In this case the taxa names are
@@ -74,7 +89,8 @@ control_afa <- system.file("extdata", "controls/bac120_r214_reps_PF01025.20.afa"
 names(mags_sequences_files) <- sub("\\.faa$", "", basename(mags_sequences_files))
 
 # Select the KOs of interest
-interesting_KOs <- c("K04561", "K20932")
+# TIP: give names to the list of KOs: they will appear in the plots later.
+interesting_KOs <- c(norB = "K04561", hzs = "K20932")
 
 # Import MAGs depths
 mags_otus <- import_mag_depths(mags_depths_files)
@@ -101,9 +117,84 @@ There is also `contigs_linker()`, which will be introduced later.
 Now that we have the results, we can plot them.
 thanos has two core functions that encompass all needs: barplot_depths() and boxplot_depths().
 
-```{r}
+```{r mags-workflow-viz}
 
-barplot_depths(results)
+barplot_depths(mags_results[[1]])
+barplot_depths(mags_results[[2]])
+
+# ...or, simply,
+barplot_depths(mags_results, wrap = "Gene")
+
+```
+
+Using MAGs as opposed to contigs has the drawback that not all of the reads in the metagenomic samples are considered, but just those that were binned into MAGs.
+However, one advantage is that it becomes possible to associated a taxonomy table to each MAG, which is not usually possible when working with contigs.
+In this case it becomes possible to perform the functional depth analysis per-taxon, rather than in-bulk.
+Moreover, sample metadata is often available, and that can also be used to enrich the plots.
+Thanos allows users to exploit all this by tightly integrating with phyloseq.
+Here is an example, where we use the thanos function read_gtdbtk() to read the GTDB annotation of the MAGs.
+
+```{r mags-workflow-byphylum, cache = T}
+
+samplesheet <- read.table(
+  "../inst/extdata/samplesheets/samplesheet.tsv",
+  header = T,
+  row.names = 1
+)
+gtdb_taxonomy <- read_gtdbtk("../inst/extdata/mags_example/taxonomy/gtdbtk_summary.tsv")
+
+# Instead of just the mags_otus, we now build a phyloseq object
+# with sample_data and tax_table.
+mags_ps <- phyloseq(mags_otus, sample_data(samplesheet), tax_table(gtdb_taxonomy))
+
+# Re-run the analysis for the interesting genes, grouping by Phylum
+mags_results_byphylum <- get_hits_depths_from_kos(interesting_KOs, mags_ps, mags_sequences_files, mags_control_tblout, linker = mags_linker, taxrank = "Phylum", nmax = 10)
+
+# Our metadata include the province (either Red Sea or Mediterranean
+# Sea) where the sample comes from, and we can display this
+# information in our plots.
+barplot_depths(mags_results_byphylum, fill = "Province", wrap = "Gene")
+
+```
+
+The only thing that changed is the additional argument `taxrank = "Phylum"` to get_hits_detphs_from_kos().
+Let's now turn to the visualization of the results.
+thanos provides two main functions: barplot_depths() and boxplot_depths().
+They both take a phyloseq object or (a list thereof) as first argument, which makes it convenient to use with the results of get_hits_depths_from_kos().
+barplot_depths() takes options `group`, `fill`, and `wrap`, to set the variable on the x axis, the variable for the fill aesthetic, and the variable for the wrap faceting in ggplot2.
+Note that `group` can be any variable from the sample_data() of the phyloseq object, and the scores of the OTUs will be summed across all samples that belong to that group.
+`group` can also be "Sample".
+
+In the last example, the samples are not ordered, which is unpleasant.
+To fix this, we can use the order_samples_by() function, which orders the samples by the order of another field in the sample_data table.
+There is also set_group_order(), which can assign a user-specified order to any field in the sample data.
+
+```{r mags-workflow-viz-sortsamples}
+
+order_samples_by(mags_results_byphylum, "Province") |>
+  barplot_depths(fill = "Province", wrap = "Gene")
+
+```
+
+boxplot_depths() takes options `x`, `fill`, and `wrap`, with analogous meanings to the barplot_depths() options.
+`fill` can be either the same as `x` or `NULL`.
+In addition, it takes a `signif` boolean option to denote whether the significance bars should be added or not (however, this is incompatible with `wrap`).
+
+```{r mags-workflow-byphylum-viz}
+
+barplot_depths(mags_results_byphylum, fill = "Phylum", wrap = "Gene")
+
+boxplot_depths(mags_results_byphylum, fill = "Gene")
+boxplot_depths(mags_results_byphylum, fill = "Gene", wrap = "Phylum", signif = F)
+
+```
+
+barplot_depths() also takes an additional `position` argument, which is passed to geom_bar().
+By default it is "stack", but it can be set to, say, "fill", to achieve a relative proportions bar plot.
+
+```{r mags-workflow-byphylum-viz-position}
+
+barplot_depths(mags_results_byphylum$hzs, fill = "Phylum", position = "fill")
 
 ```
 
@@ -114,16 +205,23 @@ While MAGs depths are usually combined into a single file, this would be impract
 Thus, standard metagenomic tools (such as METABat and CoverM) separate the depths into a file per sample.
 Thanos tries to abstract this complication away.
 
-```{r}
+```{r contigs-workflow-prep}
 
-contigs_depths_files <- list.files(system.file("extdata", "contigs_example/depths/", package = "zzthanos"), full.names = T)
-contigs_sequences_files <- list.files(system.file("extdata", "contigs_example/protein_sequences", package = "zzthanos"), full.names = T)
-control_afa <- system.file("extdata", "controls/bac120_r214_reps_PF01025.20.afa", package = "zzthanos")
+contigs_depths_files <- list.files("../inst/extdata/contigs_example/depths/", full.names = T)[1:2]
+contigs_sequences_files <- list.files("../inst/extdata/contigs_example/protein_sequences", full.names = T)[1:2]
+control_afa <- "../inst/extdata/controls/bac120_r214_reps_PF01025.20.afa"
 
 # It's important that the names of the sequences files vector be the
 # same as the names of the depths files. In this case, the sequence file names are like `group-1.faa.gz` while the depths file are `MEGAHIT-group-1-depth.txt.gz`. Thus, we convert both to the form `group-1`.
 names(contigs_depths_files) <- sub("MEGAHIT-(group-\\d+)-depth.txt.gz", "\\1", basename(contigs_depths_files))
 names(contigs_sequences_files) <- sub("\\.faa.gz", "", basename(contigs_sequences_files))
+
+# Get the hits for the universal marker gene
+contigs_control_tblout <- tblout_from_afa(control_afa, contigs_sequences_files)
+
+```
+
+```{r contigs-workflow, cache = T, eval = F}
 
 # Import contigs depths. The sample names in the depths files
 # may contain some sample-specific fields that need to be removed.
@@ -133,9 +231,6 @@ names(contigs_sequences_files) <- sub("\\.faa.gz", "", basename(contigs_sequence
 # need to keep only the ERX part, so we specify `sub_pattern` and
 # `sub_replacement` arguments to import_contig_depths().
 contigs_otus <- import_contig_depths(contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1")
-
-# Get the hits for the universal marker gene
-contigs_control_tblout <- tblout_from_afa(control_afa, contigs_sequences_files)
 
 # Run the analysis for the interesting genes
 contigs_results <- get_hits_depths_from_kos(interesting_KOs, contigs_otus, contigs_sequences_files, contigs_control_tblout, linker = contigs_linker, nmax = 10)
@@ -154,13 +249,22 @@ When the number of samples is large and the computational resources are low, rea
 For this reason, we provide an alternative function, get_contigs_hits_depths_from_ko(), which performs the calculations sample by sample and then aggregate the results.
 The usage of this function is similar to get_hits_depths_from_ko(), but it takes the arguments of import_contig_depths() instead of the phyloseq object:
 
-```{r}
+```{r contigs-workflow-memeff, cache = T}
 
 # contigs_otus <- import_contig_depths(contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1")
 # results <- get_hits_depths_from_kos(interesting_KOs, contigs_otus, contigs_sequences_files, control_tblout, linker = contigs_linker, nmax = 10)
 
 # The above two functions are combined into the following call with identical results
-contigs_results_memeff <- get_contigs_hits_depths_from_kos(interesting_KOs, contigs_depths_files, sub_pattern, sub_replacement, contigs_sequences_files, control_tblout, linker = contigs_linker, nmax = 10)
+contigs_results_memeff <- get_contigs_hits_depths_from_kos(interesting_KOs, contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1", contigs_sequences_files, contigs_control_tblout, linker = contigs_linker, nmax = 10)
+
+```
+
+And we can of course visualise the results.
+
+```{r contigs-workflow-memeff-viz}
+
+barplot_depths(contigs_results_memeff, group = "Sample")
+
 ```
 
 ## Generating "control" results
@@ -174,6 +278,12 @@ In the following, `sequence_files` refers to a vector of paths to sequence files
 ```
 ko <- "K02588"
 control_tblout <- tblout_from_ko(ko, sequence_files)
+```
+
+* Generating from an existing fasta file
+```
+faa <- "/path/to/sequences.faa"
+control_tblout <- tblout_from_faa(faa, sequence_files)
 ```
 
 * Generating from an existing multiple sequence alignment file

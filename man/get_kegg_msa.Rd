@@ -14,7 +14,7 @@ get_kegg_msa(ko, nmax = Inf, method = "Muscle", ...)
 \item{...}{Additional arguments passed to the \code{msa} function for performing the multiple sequence alignment.}
 }
 \value{
-An object of class \code{msa} representing the multiple sequence alignment of the retrieved sequences. The name of the KO identifier is stored as an attribute named \code{"name"} of the returned object.
+An object of class \code{msa} representing the multiple sequence alignment of the retrieved sequences. The name of the KO identifier (or, if NULL, the KO identifier itself) is stored as an attribute named \code{"name"} of the returned object.
 }
 \description{
 This function retrieves amino acid sequences for genes associated with a given KEGG Orthology (KO) identifier and performs a multiple sequence alignment (MSA) on them.

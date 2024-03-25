@@ -6,8 +6,8 @@
 \usage{
 get_contigs_hits_depths(
   depths_files,
-  pattern,
-  replacement,
+  sub_pattern,
+  sub_replacement,
   query_tblout,
   control_tblout,
   linker = contigs_linker,
@@ -17,9 +17,9 @@ get_contigs_hits_depths(
 \arguments{
 \item{depths_files}{A character vector of file paths to the depths files.}
 
-\item{pattern}{Character. A regular expression pattern to match in contigs names within the depth files.}
+\item{sub_pattern}{Character. A regular expression pattern to match in contigs names within the depth files.}
 
-\item{replacement}{Character. A string to replace the matched pattern in contig names.}
+\item{sub_replacement}{Character. A string to replace the matched pattern in contig names.}
 
 \item{query_tblout}{File path to the tblout file containing query hits.}
 

@@ -4,7 +4,7 @@
 \alias{search_hmm}
 \title{Perform HMMER search across multiple databases}
 \usage{
-search_hmm(hmm, dbs, cpu = 1, incE = 1e-06)
+search_hmm(hmm, dbs, cpu = 1, incE = 1e-06, hmmer_path = "")
 }
 \arguments{
 \item{hmm}{A string specifying the path to the HMM file to be searched with.}
@@ -14,6 +14,8 @@ search_hmm(hmm, dbs, cpu = 1, incE = 1e-06)
 \item{cpu}{An integer indicating the number of CPUs to be used for the search. Defaults to 1.}
 
 \item{incE}{A numeric value specifying the inclusion E-value threshold. Defaults to 1e-6.}
+
+\item{hmmer_path}{Base path for HMMer binaries (if not in PATH).}
 }
 \value{
 A data frame containing the combined results of the HMM searches on all databases.
@@ -30,5 +32,4 @@ into a single data table.
 hmm_file <- "your_hmm_file.hmm"
 db_files <- c("database1.fasta", "database2.fasta")
 search_results <- search_hmm(hmm_file, db_files, cpu = 2, incE = 1e-5)
-
 }
