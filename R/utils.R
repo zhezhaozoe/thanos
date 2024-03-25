@@ -70,8 +70,6 @@ make_motus_tax_table_from_gtdb <- function(motus_table, gtdb_map) {
 #' shorten_species_name("Proteobacteria species incertae sedis")
 #' # Proteobacteria sp. inc. s.
 #' @export
-#' @importFrom stringr str_split
-#' @importFrom stringi stri_trim_both
 shorten_species_name <- function(common_name) {
   common_name <- trimws(common_name) # Remove leading/trailing whitespace
   candidatus <- ""
