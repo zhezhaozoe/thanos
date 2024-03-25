@@ -15,7 +15,7 @@
 #' }
 #'
 #' @importFrom KEGGREST keggFind keggGet
-#' @importFrom msa msa
+#' @import msa
 #' @export
 get_kegg_msa <- function(ko, nmax = Inf, method = "Muscle", ...) {
   stopifnot(length(ko) == 1)

@@ -69,6 +69,8 @@ barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
 #'
 #' @import ggplot2
 #' @import data.table
+#'
+#' @export
 barplot_depths <- function(ps, group = "Sample", fill = NULL, position = "stack", wrap = NULL, ...) {
   d <- if (is.list(ps)) {
     rbindlist(lapply(ps, function(psi) {
