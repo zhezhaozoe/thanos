@@ -145,3 +145,23 @@ read_gtdbtk <- function(file) {
   setattr(d_classification, "names", c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
   as.matrix(setDF(d_classification, rownames = d$user_genome))
 }
+
+#' Invert Names in a Named Vector
+#'
+#' Swaps the names and values in a named vector to create a new vector with values as names and names as values.
+#'
+#' @param v A named vector.
+#'
+#' @return A named vector with its names and values swapped.
+#'
+#' @examples
+#' my_vector <- c("name1" = "Alice", "name2" = "Bob", "name3" = "Charlie")
+#' inverted_names(my_vector)
+#' # Returns: Alice = "name1", Bob = "name2", Charlie = "name3"
+#'
+#' @export
+inverted_names <- function(v) {
+  # make sure the names are unique
+  stopifnot(length(v) == length(unique(v)))
+  setNames(names(v), v)
+}

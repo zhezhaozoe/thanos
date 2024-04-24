@@ -65,3 +65,30 @@ get_kegg_kos_from_module <- function(module) {
   kos_raw <- names(m[[1]]$ORTHOLOGY)
   unlist(strsplit(kos_raw, ","))
 }
+
+#' @import data.table
+#' @importFrom KEGGREST keggGet
+#' @export
+get_kegg_reactions_from_module <- function(module) {
+  # NOTE: make a simplification: for reactions with multiple input/output compounds, the multiple compounds are treated as just one. Let's see how the graph turns out before making anything more complex.
+  # NOTE: in general, there is a many-to-many relationship between reaction IDs and KOs. Here we assume that the relationship is just one reaction ID -> many KOs.
+  # NOTE: I now think the correct interface is to make a bipartite graph with reactions and compounds as nodes. the links can be only from compound to reaction and from reaction to another compound. there can be multiple reactions for the same link, in which case they can all occur, typically with different cofactors (e.g. with either ATP or ADP as the P donor). Then, independently of this, each KO is associated to one or more reactions.
+  stopifnot(length(module) == 1)
+  m <- KEGGREST::keggGet(module)[[1]]
+  graph <- setNames(setDT(tstrsplit(m$REACTION, " -> ")), c("from", "to"))
+  orthology <- gsub(".*\\[RN:", "", m$ORTHOLOGY)
+  # Stop if there is a comma: our assumption may be wrong
+  stopifnot(!any(grepl(",", orthology)))
+  orthology <- strsplit(gsub("\\]", "", orthology), " ")
+  inverted_orthology <- inverted_names(unlist(orthology))
+  reactions <- sapply(strsplit(names(m$REACTION), ","), function(reactions) {
+    paste(reactions, inverted_orthology[reactions], sep = ":", collapse = "|")
+  })
+  graph$reaction <- reactions
+  graph <- graph[, .(to = strsplit(to, " \\+ ")[[1]]), by = c("from", "reaction")]
+  graph <- graph[, .(from = strsplit(from, " \\+ ")[[1]]), by = c("to", "reaction")]
+  graph <- unique(graph)
+  graph$from_name <- m$COMPOUND[graph$from]
+  graph$to_name <- m$COMPOUND[graph$to]
+  graph
+}
