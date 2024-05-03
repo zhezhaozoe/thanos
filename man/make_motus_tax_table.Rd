@@ -13,7 +13,10 @@ make_motus_tax_table(path, level = "mOTU")
 Generate Taxonomy Table from mOTUs Data}
 }
 \value{
-A taxonomy table with one column named after the specified taxonomic level (\code{level}). This column contains the taxonomic names, and the row names of the table are the mOTU identifiers extracted from the data.
+A taxonomy table with one column named after the specified
+taxonomic level (\code{level}). This column contains the taxonomic names, and
+the row names of the table are the mOTU identifiers extracted from the
+data.
 }
 \description{
 Generate a basic colData file from a mOTUs file

@@ -12,16 +12,20 @@ make_motus_tax_table_from_gtdb(motus_table, gtdb_map)
 \item{gtdb_map}{Path to the GTDB mapping file.}
 }
 \value{
-A \code{tax_table} object containing the GTDB taxonomy for the input mOTUs.
+A \code{tax_table} object containing the GTDB taxonomy for the
+input mOTUs.
 }
 \description{
-This function takes a user's mOTUs table and a mapping file between mOTUs and GTDB
-identifiers to create a new taxonomic table with GTDB taxonomy.
+This function takes a user's mOTUs table and a mapping file between
+mOTUs and GTDB identifiers to create a new taxonomic table with GTDB
+taxonomy.
 }
 \note{
-Please ensure the GTDB mapping file is available at the specified path. For mOTUs3,
-the file can be downloaded from https://sunagawalab.ethz.ch/share/MOTU_GTDB/mOTUs_3.0.0_GTDB_tax.tsv.
-If the file is not found, the function will stop and prompt to download or specify the mapping file.
+Please ensure the GTDB mapping file is available at the
+specified path. For mOTUs3, the file can be downloaded from
+https://sunagawalab.ethz.ch/share/MOTU_GTDB/mOTUs_3.0.0_GTDB_tax.tsv.
+If the file is not found, the function will stop and prompt to
+download or specify the mapping file.
 }
 \examples{
 # Assuming you've already downloaded the GTDB mapping file:

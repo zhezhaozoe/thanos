@@ -7,7 +7,8 @@
 build_hmm(aln, hmmer_path = "")
 }
 \arguments{
-\item{aln}{A sequence alignment object. The alignment object can have a "name" attribute, which will be used as the name of the HMM.}
+\item{aln}{A sequence alignment object. The alignment object can have
+a "name" attribute, which will be used as the name of the HMM.}
 
 \item{hmmer_path}{Base path for HMMer binaries (if not in PATH).}
 }
@@ -15,12 +16,14 @@ build_hmm(aln, hmmer_path = "")
 The path to the file containing the generated HMM.
 }
 \description{
-This function takes a sequence alignment, converts it to the Stockholm format, and then uses the \code{hmmbuild} command
-from the HMMER suite to build a Hidden Markov Model (HMM).
+This function takes a sequence alignment, converts it to the
+Stockholm format, and then uses the \code{hmmbuild} command from the HMMER
+suite to build a Hidden Markov Model (HMM).
 }
 \note{
-This function requires the external programs \code{esl-reformat} and \code{hmmbuild} from the HMMER suite to be
-installed and accessible in the system's PATH.
+This function requires the external programs \code{esl-reformat} and
+\code{hmmbuild} from the HMMER suite to be installed and accessible in the
+system's PATH.
 }
 \examples{
 # Assuming `my_alignment` is an alignment object

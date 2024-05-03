@@ -22,32 +22,44 @@ get_contigs_hits_depths_from_kos(
 \arguments{
 \item{kos}{A character vector of KEGG Orthology (KO) identifiers.}
 
-\item{depths_files}{A character vector indicating the paths to depths files.}
+\item{depths_files}{A character vector indicating the paths to depths
+files.}
 
-\item{sub_pattern}{A regex pattern used to match and extract contig names from the depths files.}
+\item{sub_pattern}{A regex pattern used to match and extract contig
+names from the depths files.}
 
-\item{sub_replacement}{A character string to replace in the extracted contig names, based on the \code{sub_pattern} argument.}
+\item{sub_replacement}{A character string to replace in the extracted
+contig names, based on the \code{sub_pattern} argument.}
 
 \item{dbs}{A not used parameter in the current implementation.}
 
-\item{control_tblout}{Character string indicating the path to the tblout file from the control.}
+\item{control_tblout}{Character string indicating the path to the
+tblout file from the control.}
 
-\item{linker}{A function that links contig names to their hits and depths. Defaults to \code{contigs_linker}.}
+\item{linker}{A function that links contig names to their hits and
+depths. Defaults to \code{contigs_linker}.}
 
-\item{msa_method}{Character string representing the method used for multiple sequence alignment. Defaults to \code{"Muscle"}.}
+\item{msa_method}{Character string representing the method used for
+multiple sequence alignment. Defaults to \code{"Muscle"}.}
 
-\item{cpu}{An integer indicating the number of CPUs to be used in computations. Defaults to \code{1}.}
+\item{cpu}{An integer indicating the number of CPUs to be used in
+computations. Defaults to \code{1}.}
 
-\item{incE}{A numeric value specifying the inclusion E-value threshold. Defaults to \code{1e-6}.}
+\item{incE}{A numeric value specifying the inclusion E-value
+threshold. Defaults to \code{1e-6}.}
 
-\item{verbose}{A logical indicating whether to display detailed output. Defaults to \code{FALSE}.}
+\item{verbose}{A logical indicating whether to display detailed
+output. Defaults to \code{FALSE}.}
 }
 \value{
-Returns a list where each element corresponds to the result from a single KO identifier, containing the contig hits and their depths information.
+Returns a list where each element corresponds to the result
+from a single KO identifier, containing the contig hits and their
+depths information.
 }
 \description{
-For each KEGG Orthology (KO) identifier provided, this function retrieves contig hits and their depths from the
-specified depths files.
+For each KEGG Orthology (KO) identifier provided, this function
+retrieves contig hits and their depths from the specified depths
+files.
 }
 \examples{
 \dontrun{

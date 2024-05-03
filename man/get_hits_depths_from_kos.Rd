@@ -26,24 +26,32 @@ get_hits_depths_from_kos(
 
 \item{control_tblout}{A tblout formatted file with the control genes' hits.}
 
-\item{linker}{Function that links OTU identifiers between tblout tables and the phyloseq object. The function must take two arguments: SeqFile and Target.}
+\item{linker}{Function that links OTU identifiers between tblout tables and
+phyloseq object. The function must take two arguments: SeqFile and Target.}
 
-\item{msa_method}{The method used for multiple sequence alignment. "Muscle" by default.}
+\item{msa_method}{The method used for multiple sequence alignment. "Muscle"
+by default.}
 
-\item{cpu}{The number of CPUs to be used for computation. Integer value. 1 by default.}
+\item{cpu}{The number of CPUs to be used for computation. Integer value.
+1 by default.}
 
-\item{incE}{The inclusion E-value threshold for considering a hit significant. Numeric value. 1e-6 by default.}
+\item{incE}{The inclusion E-value threshold for considering a hit
+significant. Numeric value. 1e-6 by default.}
 
-\item{taxrank}{Optional; character specifying the taxonomic rank at which to aggregate hits. Valid options depend on the taxonomic ranks present in the \code{ps} object. If not specified, no aggregation is performed.}
+\item{taxrank}{Optional; character specifying the taxonomic rank at which
+to aggregate hits. Valid options depend on the taxonomic ranks present in
+the \code{ps} object. If not specified, no aggregation is performed.}
 }
 \value{
-A list where each element corresponds to a KO identifier inputted and contains
-the computed depths of hits for that KO in the sample set.
+A list where each element corresponds to a KO identifier
+inputted and contains the computed depths of hits for that KO in the
+sample set.
 }
 \description{
-This function takes KEGG Orthology (KO) identifiers, a phyloseq object, a set of databases,
-a control tblout formatted file, and computes
-the depths of hits related to the input KOs in the provided sample set.
+This function takes KEGG Orthology (KO) identifiers, a phyloseq
+object, a set of databases, a control tblout formatted file, and
+computes the depths of hits related to the input KOs in the provided
+sample set.
 }
 \examples{
 kos <- c("K00001", "K00002")

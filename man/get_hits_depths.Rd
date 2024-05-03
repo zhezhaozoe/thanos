@@ -14,39 +14,44 @@ get_hits_depths(
 )
 }
 \arguments{
-\item{ps}{A phyloseq object containing OTU (Operational Taxonomic Units) counts and (optionally) taxonomic information.}
+\item{ps}{A phyloseq object containing OTU (Operational Taxonomic
+Units) counts and (optionally) taxonomic information.}
 
 \item{query_tblout}{Character; the HMMER output for the query genes.}
 
-\item{control_tblout}{Character; the HMMER output for the control genes.}
+\item{control_tblout}{Character; the HMMER output for the control
+genes.}
 
-\item{linker}{Function that links OTU identifiers between tblout tables and the phyloseq object. The function must take two arguments: SeqFile and Target.}
+\item{linker}{Function that links OTU identifiers between tblout
+tables and the phyloseq object. The function must take two arguments:
+SeqFile and Target.}
 
-\item{taxrank}{Optional; character specifying the taxonomic rank at which to aggregate hits. Valid options depend on the taxonomic ranks present in the \code{ps} object. If not specified, no aggregation is performed.}
+\item{taxrank}{Optional; character specifying the taxonomic rank
+at which to aggregate hits. Valid options depend on the taxonomic
+ranks present in the \code{ps} object. If not specified, no aggregation is
+performed.}
 
-\item{phyloseq}{Logical; if TRUE, returns a phyloseq object, otherwise returns a data.table object. Defaults to TRUE.}
+\item{phyloseq}{Logical; if TRUE, returns a phyloseq object,
+otherwise returns a data.table object. Defaults to TRUE.}
 }
 \value{
-If \code{phyloseq} is TRUE (the default), this function returns a phyloseq object that contains the relative OTU depths of query vs control genes (aggregated by taxrank if specified). If \code{phyloseq} is FALSE, it returns a data.table object containing the calculated depths for queries and controls separately.
+If \code{phyloseq} is TRUE (the default), this function returns
+a phyloseq object that contains the relative OTU depths of query vs
+control genes (aggregated by taxrank if specified). If \code{phyloseq} is
+FALSE, it returns a data.table object containing the calculated depths
+for queries and controls separately.
 }
 \description{
-\code{get_hits_depths} function calculates the relative OTU depths between the query and control genes, optionally aggregating hits at a specified taxonomic rank.
+\code{get_hits_depths} function calculates the relative OTU
+depths between the query and control genes, optionally aggregating hits
+at a specified taxonomic rank.
 }
 \details{
-The function prunes the phyloseq object to include only taxa that are present in both the query and control datasets based on the \code{linker} function. If a taxonomic rank is specified, the function aggregates hits at that rank and recalculates taxa names. It also warns about queries not found in the control. It performs calculates the depth ratios between query and control conditions.
-Two linker functions are provided: mags_linker() and contigs_linker().
-}
-\examples{
-```
-# Assume ps is a phyloseq object with taxa, otu_table etc., query_tblout and control_tblout are loaded
-# Define a simple linker function
-linker_function <- function(seq_file, target) {
-  paste(seq_file, target, sep = "_")
-}
-# Call the get_hits_depths function without aggregation
-get_hits_depths_result <- get_hits_depths(ps, query_tblout, control_tblout, linker_function)
-
-# Call the get_hits_depths function with aggregation at genus level
-get_hits_depths_aggregated <- get_hits_depths(ps, query_tblout, control_tblout, linker_function, taxrank = "Genus")
-```
+The function prunes the phyloseq object to include only taxa
+that are present in both the query and control datasets based on the
+\code{linker} function. If a taxonomic rank is specified, the function
+aggregates hits at that rank and recalculates taxa names. It also
+warns about queries not found in the control. It performs calculates
+the depth ratios between query and control conditions. Two linker
+functions are provided: mags_linker() and contigs_linker().
 }

@@ -10,36 +10,51 @@ get_hits_depths_from_hmm(
   ps,
   dbs,
   linker,
-  cpu = 1,
-  incE = 1e-06,
   taxrank = NULL,
-  ...
+  parallel_processes = 1,
+  cpus_per_process = 1,
+  incE = 1e-06,
+  hmmer_path = ""
 )
 }
 \arguments{
-\item{queries_hmm}{A character vector of paths to the query HMM files.}
+\item{queries_hmm}{A character vector of paths to the query HMM
+files.}
 
-\item{control_hmm}{A character string specifying the path to the control HMM file.}
+\item{control_hmm}{A character string specifying the path to the
+control HMM file.}
 
-\item{ps}{A parameter set or data required by \code{get_hits_depths} function.}
+\item{ps}{A parameter set or data required by \code{get_hits_depths}
+function.}
 
-\item{dbs}{A character vector specifying the paths to the database files to be searched.}
+\item{dbs}{A character vector specifying the paths to the database
+files to be searched.}
 
-\item{linker}{A parameter or function used to connect or process the information between the query and control results.}
+\item{linker}{A parameter or function used to connect or process the
+information between the query and control results.}
 
-\item{cpu}{The number of CPUs to use for the HMMER search. Defaults to 1.}
+\item{taxrank}{An optional parameter specifying the taxonomic rank
+consideration. Can be used within \code{get_hits_depths} function.}
 
-\item{incE}{The inclusion E-value threshold for the HMMER search. Defaults to 1e-6 to filter significant hits.}
+\item{incE}{The inclusion E-value threshold for the HMMER search.
+Defaults to 1e-6 to filter significant hits.}
 
-\item{taxrank}{An optional parameter specifying the taxonomic rank consideration. Can be used within \code{get_hits_depths} function.}
+\item{cpu}{The number of CPUs to use for the HMMER search. Defaults
+to 1.}
 
-\item{...}{Additional arguments passed to the \code{get_hits_depths} function.}
+\item{...}{Additional arguments passed to the \code{get_hits_depths}
+function.}
 }
 \value{
-A list where each element corresponds to the result of \code{get_hits_depths} for a query HMM, containing information on the hits' depths based on KO identifiers.
+A list where each element corresponds to the result of
+\code{get_hits_depths} for a query HMM, containing information on the
+hits' depths based on KO identifiers.
 }
 \description{
-This function executes a HMMER search against a database for a set of query and control HMM profiles. It returns the hits depths from KEGG Orthology (KO) identifiers for each query relative to the control.
+This function executes a HMMER search against a database
+for a set of query and control HMM profiles. It returns the hits
+depths from KEGG Orthology (KO) identifiers for each query relative to
+the control.
 }
 \examples{
 # Assuming proper environment setup and availability of required files

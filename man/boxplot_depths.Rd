@@ -15,31 +15,46 @@ boxplot_depths(
 )
 }
 \arguments{
-\item{ps}{A phyloseq object or a list of phyloseq objects. The function melts the data for plotting.}
+\item{ps}{A phyloseq object or a list of phyloseq objects. The
+function melts the data for plotting.}
 
-\item{fill}{The name of the variable to use for filling boxes. Can be set to NULL. Defaults to NULL.}
+\item{fill}{The name of the variable to use for filling boxes. Can be
+set to NULL. Defaults to NULL.}
 
-\item{x}{The name of the variable to use for the x-axis. Inherits the value of \code{fill} by default.}
+\item{x}{The name of the variable to use for the x-axis. Inherits the
+value of \code{fill} by default.}
 
-\item{wrap}{An optional string specifying a variable name to wrap the plot into multiple panels. Not supported alongside \code{signif}.}
+\item{wrap}{An optional string specifying a variable name to wrap the
+plot into multiple panels. Not supported alongside \code{signif}.}
 
-\item{signif}{Logical, indicating whether to perform and display significance testing between groups. Defaults to TRUE.}
+\item{signif}{Logical, indicating whether to perform and display
+significance testing between groups. Defaults to TRUE.}
 
-\item{test}{The name of the statistical test function to use as a character string. Defaults to "wilcox.test".}
+\item{test}{The name of the statistical test function to use as a
+character string. Defaults to "wilcox.test".}
 
 \item{...}{Additional arguments passed to \code{geom_boxplot}.}
 }
 \value{
-A ggplot object representing the boxplot with or without significance indicators.
+A ggplot object representing the boxplot with or without
+significance indicators.
 }
 \description{
 Generate a Boxplot with Significance Indicators
 }
 \details{
-This function creates a boxplot of abundance data from a given phyloseq object or a list of phyloseq objects. When \code{signif} is TRUE, it automatically calculates and displays significance levels between the comparisons of boxplots based on the specified statistical test. \code{wrap} parameter allows creating multiple panels but is not compatible with \code{signif} parameter. If using \code{signif}, consider using \code{patchwork} for combining multiple plots.
+This function creates a boxplot of abundance data from a
+given phyloseq object or a list of phyloseq objects. When \code{signif} is
+TRUE, it automatically calculates and displays significance levels
+between the comparisons of boxplots based on the specified statistical
+test. \code{wrap} parameter allows creating multiple panels but is not
+compatible with \code{signif} parameter. If using \code{signif}, consider using
+\code{patchwork} for combining multiple plots.
 }
 \note{
-Using \code{wrap} together with \code{signif} will result in an error message as they are not compatible. Use \code{patchwork} package for layout management in such cases.
+Using \code{wrap} together with \code{signif} will result in an error
+message as they are not compatible. Use \code{patchwork} package for layout
+management in such cases.
 }
 \examples{
 # Assuming `ps` is a phyloseq object with proper setup:

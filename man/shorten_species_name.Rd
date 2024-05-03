@@ -13,11 +13,12 @@ shorten_species_name(common_name)
 A string with the abbreviated species name.
 }
 \description{
-This function takes a common species name and shortens it into an initialism
-format consisting of the first letter of the first word followed by a period
-and the full second word. Leading and trailing whitespaces are trimmed.
-Common long words like "Candidatus" and "species incertae sedis" are abbreviated.
-Useful for reducing the legend clutter when plotting.
+This function takes a common species name and shortens it into an
+initialism format consisting of the first letter of the first word
+followed by a period and the full second word. Leading and trailing
+whitespaces are trimmed. Common long words like "Candidatus" and
+"species incertae sedis" are abbreviated. Useful for reducing the
+legend clutter when plotting.
 }
 \examples{
 shorten_species_name("Canis lupus")

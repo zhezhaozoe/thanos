@@ -13,7 +13,8 @@ inverted_names(v)
 A named vector with its names and values swapped.
 }
 \description{
-Swaps the names and values in a named vector to create a new vector with values as names and names as values.
+Swaps the names and values in a named vector to create a new vector
+with values as names and names as values.
 }
 \examples{
 my_vector <- c("name1" = "Alice", "name2" = "Bob", "name3" = "Charlie")

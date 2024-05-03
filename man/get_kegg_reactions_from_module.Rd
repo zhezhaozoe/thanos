@@ -7,16 +7,30 @@
 get_kegg_reactions_from_module(module)
 }
 \arguments{
-\item{module}{A character string specifying the KEGG module ID (e.g. "M00001").}
+\item{module}{A character string specifying the KEGG module ID (e.g.
+"M00001").}
 }
 \value{
-A data.table object representing the simplified graph with the following columns: \code{from} (ID of the starting compound), \code{to} (ID of the resulting compound), \code{reaction} (concatenated string of reaction IDs and their associated KOs, separated by "|"), \code{from_name} (name of the starting compound), and \code{to_name} (name of the resulting compound).
+A data.table object representing the simplified graph with
+the following columns: \code{from} (ID of the starting compound), \code{to}
+(ID of the resulting compound), \code{reaction} (concatenated string of
+reaction IDs and their associated KOs, separated by "|"), \code{from_name}
+(name of the starting compound), and \code{to_name} (name of the resulting
+compound).
 }
 \description{
-This function fetches reactions for a specified KEGG module using the KEGGREST API and processes them to create a graph representation. In this graph, the nodes are compounds and the edges are reactions.
+This function fetches reactions for a specified KEGG module using the
+KEGGREST API and processes them to create a graph representation. In
+this graph, the nodes are compounds and the edges are reactions.
 }
 \details{
-The KEGG graph has compounds as nodes and reactions as edges. Each edge can actually be associated with multiple reactions, in which case all of them occur. (Typically, they are the same chemical transformation with different cofactors or performed by different enzymes.) In turn, each reaction can be associated with one or more KOs. The same KO can be associated to multiple reactions as well.
+The KEGG graph has compounds as nodes and reactions as
+edges. Each edge can actually be associated with multiple reactions,
+in which case all of them occur. (Typically, they are the same
+chemical transformation with different cofactors or performed by
+different enzymes.) In turn, each reaction can be associated with one
+or more KOs. The same KO can be associated to multiple reactions as
+well.
 }
 \examples{
 \dontrun{

@@ -1,9 +1,11 @@
 #' Build a Hidden Markov Model (HMM) from a sequence alignment
 #'
-#' This function takes a sequence alignment, converts it to the Stockholm format, and then uses the `hmmbuild` command
-#' from the HMMER suite to build a Hidden Markov Model (HMM).
+#' This function takes a sequence alignment, converts it to the
+#' Stockholm format, and then uses the `hmmbuild` command from the HMMER
+#' suite to build a Hidden Markov Model (HMM).
 #'
-#' @param aln A sequence alignment object. The alignment object can have a "name" attribute, which will be used as the name of the HMM.
+#' @param aln A sequence alignment object. The alignment object can have
+#' a "name" attribute, which will be used as the name of the HMM.
 #' @param hmmer_path Base path for HMMer binaries (if not in PATH).
 #'
 #' @return The path to the file containing the generated HMM.
@@ -13,9 +15,10 @@
 #' hmm_file <- build_hmm(my_alignment)
 #' # hmm_file now contains the path to the HMM file
 #'
-#' @note This function requires the external programs `esl-reformat` and `hmmbuild` from the HMMER suite to be
-#'       installed and accessible in the system's PATH.
-#'
+#' @note This function requires the external programs `esl-reformat` and
+#' `hmmbuild` from the HMMER suite to be installed and accessible in the
+#' system's PATH.
+#
 #' @references
 #' Eddy, S.R. "HMMER: biosequence analysis using profile hidden Markov models."
 #' http://hmmer.org/
@@ -32,7 +35,8 @@ build_hmm <- function(aln, hmmer_path = "") {
     afa <- tempfile(fileext = ".afa")
     Biostrings::writeXStringSet(Biostrings::unmasked(aln), file = afa)
   } else {
-    stop("Unrecognised format. aln can be either the path to an alignment in fasta format or an object of class from the msa package")
+    stop("Unrecognised format. aln can be either the path to an alignment",
+         "in fasta format or an object of class from the msa package")
   }
   sto <- tempfile(fileext = ".sto")
   hmm <- tempfile(fileext = ".hmm")
@@ -59,25 +63,35 @@ build_hmm <- function(aln, hmmer_path = "") {
 
 #' Perform HMMER search across multiple databases
 #'
-#' This function executes HMMER search on a given Hidden Markov Model (HMM) file across
-#' multiple database files (dbs). It allows the setting of the number of CPUs to be used
-#' and the inclusion E-value threshold. The results from searching each database are combined
-#' into a single data table.
+#' This function executes HMMER search on a given Hidden Markov Model
+#' (HMM) file across multiple database files (dbs). It allows the
+#' setting of the number of CPUs to be used and the inclusion E-value
+#' threshold. The results from searching each database are combined into
+#' a single data table.
 #'
-#' @param hmm A string specifying the path to the HMM file to be searched with.
-#' @param dbs A character vector, where each element is a path to a database file to be searched.
-#' @param cpu An integer indicating the number of CPUs to be used for the search. Defaults to 1.
-#' @param incE A numeric value specifying the inclusion E-value threshold. Defaults to 1e-6.
+#' @param hmm A string specifying the path to the HMM file to be
+#' searched with.
+#' @param dbs A character vector, where each element is a path to a
+#' database file to be searched.
+#' @param cpu An integer indicating the number of CPUs to be used for
+#' the search. Defaults to 1.
+#' @param incE A numeric value specifying the inclusion E-value
+#' threshold. Defaults to 1e-6.
 #' @param hmmer_path Base path for HMMer binaries (if not in PATH).
 #'
-#' @return A data frame containing the combined results of the HMM searches on all databases.
-#'         Each row represents one HMMER hit, and the data frame includes a column 'SeqFile' indicating
-#'         the database file from which each hit originates.
+#' @return A data frame containing the combined results of the HMM
+#' searches on all databases. Each row represents one HMMER hit, and the
+#' data frame includes a column 'SeqFile' indicating the database file
+#' from which each hit originates.
 #'
 #' @examples
 #' hmm_file <- "your_hmm_file.hmm"
 #' db_files <- c("database1.fasta", "database2.fasta")
 #' search_results <- search_hmm(hmm_file, db_files, cpu = 2, incE = 1e-5)
+#'
+#' @import data.table
+#' @importFrom parallel mclapply
+#'
 #' @export
 search_hmm <- function(
     hmm, dbs,
@@ -91,52 +105,60 @@ search_hmm <- function(
   } else {
     "hmmsearch"
   }
-  data.table::rbindlist(parallel::mclapply(mc.cores = parallel_processes, dbs, function(target) {
+  rbindlist(parallel::mclapply(dbs, function(target) {
     tblout <- tempfile(fileext = ".tblout")
     system2(hmmsearch_cmd, c(
-        "--tblout", tblout,
-        "--cpu", cpus_per_process,
-        "--incE", incE,
-        hmm,
-        target),
-      stdout = NULL)
+      "--tblout", tblout,
+      "--cpu", cpus_per_process,
+      "--incE", incE,
+      hmm,
+      target
+    ), stdout = NULL)
     res <- read_hmmer_tblout(tblout)
     unlink(tblout)
     res
-  }), id = "SeqFile")
+  }, mc.cores = parallel_processes), id = "SeqFile")
 }
 
 #' Compare OTU hits depths between query and control
-#'
-#' @param ps A phyloseq object containing OTU (Operational Taxonomic Units) counts and (optionally) taxonomic information.
+#' 
+#' @param ps A phyloseq object containing OTU (Operational Taxonomic
+#' Units) counts and (optionally) taxonomic information.
 #' @param query_tblout Character; the HMMER output for the query genes.
-#' @param control_tblout Character; the HMMER output for the control genes.
-#' @param linker Function that links OTU identifiers between tblout tables and the phyloseq object. The function must take two arguments: SeqFile and Target.
-#' @param taxrank Optional; character specifying the taxonomic rank at which to aggregate hits. Valid options depend on the taxonomic ranks present in the `ps` object. If not specified, no aggregation is performed.
-#' @param phyloseq Logical; if TRUE, returns a phyloseq object, otherwise returns a data.table object. Defaults to TRUE.
+#' @param control_tblout Character; the HMMER output for the control
+#' genes.
+#' @param linker Function that links OTU identifiers between tblout
+#' tables and the phyloseq object. The function must take two arguments:
+#' SeqFile and Target.
+#' @param taxrank Optional; character specifying the taxonomic rank
+#' at which to aggregate hits. Valid options depend on the taxonomic
+#' ranks present in the `ps` object. If not specified, no aggregation is
+#' performed.
+#' @param phyloseq Logical; if TRUE, returns a phyloseq object,
+#' otherwise returns a data.table object. Defaults to TRUE.
 #'
-#' @return If `phyloseq` is TRUE (the default), this function returns a phyloseq object that contains the relative OTU depths of query vs control genes (aggregated by taxrank if specified). If `phyloseq` is FALSE, it returns a data.table object containing the calculated depths for queries and controls separately.
+#' @return If `phyloseq` is TRUE (the default), this function returns
+#' a phyloseq object that contains the relative OTU depths of query vs
+#' control genes (aggregated by taxrank if specified). If `phyloseq` is
+#' FALSE, it returns a data.table object containing the calculated depths
+#' for queries and controls separately.
 #'
-#' @description `get_hits_depths` function calculates the relative OTU depths between the query and control genes, optionally aggregating hits at a specified taxonomic rank.
+#' @description `get_hits_depths` function calculates the relative OTU
+#' depths between the query and control genes, optionally aggregating hits
+#' at a specified taxonomic rank.
 #'
-#' @details The function prunes the phyloseq object to include only taxa that are present in both the query and control datasets based on the `linker` function. If a taxonomic rank is specified, the function aggregates hits at that rank and recalculates taxa names. It also warns about queries not found in the control. It performs calculates the depth ratios between query and control conditions.
-#' Two linker functions are provided: mags_linker() and contigs_linker().
+#' @details The function prunes the phyloseq object to include only taxa
+#' that are present in both the query and control datasets based on the
+#' `linker` function. If a taxonomic rank is specified, the function
+#' aggregates hits at that rank and recalculates taxa names. It also
+#' warns about queries not found in the control. It performs calculates
+#' the depth ratios between query and control conditions. Two linker
+#' functions are provided: mags_linker() and contigs_linker().
 #'
 #' @import data.table
+#' @import phyloseq
 #
-#' @examples
-#' ```
-#' # Assume ps is a phyloseq object with taxa, otu_table etc., query_tblout and control_tblout are loaded
-#' # Define a simple linker function
-#' linker_function <- function(seq_file, target) {
-#'   paste(seq_file, target, sep = "_")
-#' }
-#' # Call the get_hits_depths function without aggregation
-#' get_hits_depths_result <- get_hits_depths(ps, query_tblout, control_tblout, linker_function)
-#'
-#' # Call the get_hits_depths function with aggregation at genus level
-#' get_hits_depths_aggregated <- get_hits_depths(ps, query_tblout, control_tblout, linker_function, taxrank = "Genus")
-#' ```
+#' @export
 get_hits_depths <- function(
     ps, query_tblout, control_tblout, linker,
     taxrank = NULL, phyloseq = TRUE) {
@@ -191,7 +213,7 @@ get_hits_depths <- function(
       return(mer)
     }
     phyloseq(
-      merged_hits_to_otu_table(mer, taxa_are_rows = TRUE)
+      merged_hits_to_otu_table(mer, taxa_are_rows = TRUE),
       access(ps, "sam_data"),
       access(ps, "phy_tree"),
       access(ps, "ref_seq")
@@ -207,7 +229,7 @@ get_hits_depths <- function(
       return(mer)
     }
     phyloseq(
-      merged_hits_to_otu_table(mer, taxa_are_rows = FALSE)
+      merged_hits_to_otu_table(mer, taxa_are_rows = FALSE),
       access(ps, "sam_data"),
       access(ps, "phy_tree"),
       access(ps, "ref_seq")

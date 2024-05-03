@@ -9,18 +9,21 @@ order_samples_by(ps, by)
 \arguments{
 \item{ps}{A \code{phyloseq} object (or list thereof) containing sample data.}
 
-\item{by}{The name of the column in the sample metadata to order the samples by.}
+\item{by}{The name of the column in the sample metadata to order the
+samples by.}
 }
 \value{
 A \code{phyloseq} object (or list thereof) with reordered samples.
 }
 \description{
-Reorders the samples in a \code{phyloseq} object based on the specified metadata column.
+Reorders the samples in a \code{phyloseq} object based on the specified
+metadata column.
 }
 \details{
-This function reorders the samples in a given \code{phyloseq} object (or list thereof) according to the
-values of a specified metadata column in ascending order. This can be useful for
-plotting or analyses where the order of samples based on metadata is relevant.
+This function reorders the samples in a given \code{phyloseq} object (or
+list thereof) according to the values of a specified metadata column
+in ascending order. This can be useful for plotting or analyses where
+the order of samples based on metadata is relevant.
 }
 \examples{
 # Assuming `ps` is a phyloseq object and `pH` is a metadata column

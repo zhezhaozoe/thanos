@@ -9,18 +9,18 @@ import_motus(path, make_tax_table = F)
 \arguments{
 \item{path}{A string specifying the path to the motus data file.}
 
-\item{make_tax_table}{A logical value indicating whether to create a default tax table. Default is FALSE.}
+\item{make_tax_table}{A logical value indicating whether to create a
+default tax table. Default is FALSE.}
 }
 \value{
-The imported motus data. If make_tax_table is TRUE, a tax table is also returned.
+The imported motus data. If make_tax_table is TRUE, a tax
+table is also returned.
 }
 \description{
-Keep only the motus ID, not the tax name, which should be provided separately as colData.
+Keep only the motus ID, not the tax name, which should
+be provided separately as colData.
 }
 \details{
 This function is used to import mOTUs data from a specified path.
 Optionally, it can also create a default tax table from the mOTUs names.
-}
-\examples{
-motus_data <- import_motus("path/to/your/motus_file.csv", make_tax_table = TRUE)
 }

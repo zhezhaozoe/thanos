@@ -68,13 +68,27 @@ get_kegg_kos_from_module <- function(module) {
 
 #' Retrieve KEGG reactions from a specified module as a graph
 #'
-#' This function fetches reactions for a specified KEGG module using the KEGGREST API and processes them to create a graph representation. In this graph, the nodes are compounds and the edges are reactions.
+#' This function fetches reactions for a specified KEGG module using the
+#' KEGGREST API and processes them to create a graph representation. In
+#' this graph, the nodes are compounds and the edges are reactions.
 
-#' @param module A character string specifying the KEGG module ID (e.g. "M00001").
+#' @param module A character string specifying the KEGG module ID (e.g.
+#' "M00001").
 #'
-#' @details The KEGG graph has compounds as nodes and reactions as edges. Each edge can actually be associated with multiple reactions, in which case all of them occur. (Typically, they are the same chemical transformation with different cofactors or performed by different enzymes.) In turn, each reaction can be associated with one or more KOs. The same KO can be associated to multiple reactions as well.
+#' @details The KEGG graph has compounds as nodes and reactions as
+#' edges. Each edge can actually be associated with multiple reactions,
+#' in which case all of them occur. (Typically, they are the same
+#' chemical transformation with different cofactors or performed by
+#' different enzymes.) In turn, each reaction can be associated with one
+#' or more KOs. The same KO can be associated to multiple reactions as
+#' well.
 #'
-#' @return A data.table object representing the simplified graph with the following columns: `from` (ID of the starting compound), `to` (ID of the resulting compound), `reaction` (concatenated string of reaction IDs and their associated KOs, separated by "|"), `from_name` (name of the starting compound), and `to_name` (name of the resulting compound).
+#' @return A data.table object representing the simplified graph with
+#' the following columns: `from` (ID of the starting compound), `to`
+#' (ID of the resulting compound), `reaction` (concatenated string of
+#' reaction IDs and their associated KOs, separated by "|"), `from_name`
+#' (name of the starting compound), and `to_name` (name of the resulting
+#' compound).
 #'
 #' @examples
 #' \dontrun{
@@ -94,7 +108,7 @@ get_kegg_reactions_from_module <- function(module) {
   # Stop if there is a comma: our assumption may be wrong
   stopifnot(!any(grepl(",", orthology)))
   orthology <- strsplit(gsub("\\]", "", orthology), " ")
-  inverted_orthology <- inverted_names(unlist(orthology))
+  inverted_orthology <- inverted_names(orthology)
   reactions <- sapply(strsplit(names(m$REACTION), ","), function(reactions) {
     paste(reactions, inverted_orthology[reactions], sep = ":", collapse = "|")
   })

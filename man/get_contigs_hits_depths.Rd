@@ -11,31 +11,40 @@ get_contigs_hits_depths(
   query_tblout,
   control_tblout,
   linker = contigs_linker,
-  verbose = F
+  verbose = FALSE
 )
 }
 \arguments{
-\item{depths_files}{A character vector of file paths to the depths files.}
+\item{depths_files}{A character vector of file paths to the depths
+files.}
 
-\item{sub_pattern}{Character. A regular expression pattern to match in contigs names within the depth files.}
+\item{sub_pattern}{Character. A regular expression pattern to match
+in contigs names within the depth files.}
 
-\item{sub_replacement}{Character. A string to replace the matched pattern in contig names.}
+\item{sub_replacement}{Character. A string to replace the matched
+pattern in contig names.}
 
-\item{query_tblout}{File path to the tblout file containing query hits.}
+\item{query_tblout}{File path to the tblout file containing query
+hits.}
 
-\item{control_tblout}{File path to the tblout file containing control hits.}
+\item{control_tblout}{File path to the tblout file containing control
+hits.}
 
-\item{linker}{A function to link contig identifiers between the query and control tblout files.}
+\item{linker}{A function to link contig identifiers between the query
+and control tblout files.}
 
-\item{verbose}{Logical. Indicates whether to print detailed processing messages. Defaults to FALSE.}
+\item{verbose}{Logical. Indicates whether to print detailed
+processing messages. Defaults to FALSE.}
 }
 \value{
-A phyloseq object with the relative depths of query vs control genes across all \code{detphs_files}.
+A phyloseq object with the relative depths of query vs
+control genes across all \code{detphs_files}.
 }
 \description{
-This function processes depth files to extract and calculate the hits depths for contigs.
-Contig depths files are typically large (several hundred MB per sample), therefore, with many samples, it's impractical to load all of the data at once in memory. This function provides a way to calculate the depths sample-wise, to avoid storing all the data in memory.
-}
-\examples{
-get_contigs_hits_depths(c("depths1.txt", "depths2.txt"), "_contig", "_sequence", "query.tblout", "control.tblout")
+This function processes depth files to extract and calculate the    .
+hits depths for contigs Contig depths files are typically large     .
+(several hundred MB per sample), therefore, with many samples, it's .
+impractical to load all of the data at once in memory. This function.
+provides a way to calculate the depths sample-wise, to avoid storing.
+all the data in memory                                              .
 }

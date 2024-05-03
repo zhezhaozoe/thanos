@@ -4,33 +4,45 @@
 \alias{import_contig_depths}
 \title{Import Contig Depths from Depth Files}
 \usage{
-import_contig_depths(depth_files, sub_pattern, sub_replacement)
+import_contig_depths(depth_files, sub_pattern, sub_replacement, mc.cores = 1)
 }
 \arguments{
-\item{depth_files}{A character vector of file paths, each pointing to a different depth file.}
+\item{depth_files}{A character vector of file paths, each pointing to
+a different depth file.}
 
-\item{sub_pattern}{A pattern (regular expression) to search for within non-"bam-var" column names.}
+\item{sub_pattern}{A pattern (regular expression) to search for
+within non-"bam-var" column names.}
 
-\item{sub_replacement}{Replacement text for any occurrences of \code{sub_pattern} within column names.}
+\item{sub_replacement}{Replacement text for any occurrences of
+\code{sub_pattern} within column names.}
+
+\item{mc.cores}{Number of files to read in parallel with mclapply().}
 }
 \value{
-An OTU table object with taxa as rows, where each row represents a contig and columns represent
-processed depth values adjusted for contig length and total average depth.
+An OTU table object with taxa as rows, where each row
+represents a contig and columns represent processed depth values
+adjusted for contig length and total average depth.
 }
 \description{
-This function reads depth files, processes and normalizes their contents, and then
-generates a contig-based OTU table suitable for downstream analysis.
+This function reads depth files, processes and normalizes their
+contents, and then generates a contig-based OTU table suitable for
+downstream analysis.
 }
 \details{
 The function operates in several steps:
-- It reads the depth files and combines them into a single data table.
-- "bam-var" columns are identified and removed from the dataset.
-- Non-"bam-var" column names are processed based on \code{sub_pattern} and \code{sub_replacement}.
-- The data is then structured into a matrix representation where each row corresponds to a contig,
-and columns represent depth values adjusted for each contig's length and relative contribution
-to the total average depth.
-- A contig's name and its assembly group are concatenated and used as row names for the matrix.
-- The function finally returns an OTU table object with taxa as rows.
+\itemize{
+\item It reads the depth files and combines them into a single data table.
+\item "bam-var" columns are identified and removed from the dataset.
+\item Non-"bam-var" column names are processed based on \code{sub_pattern}
+and \code{sub_replacement}.
+\item The data is then structured into a matrix representation where each row
+corresponds to a contig, and columns represent depth values adjusted for
+each contig's length and relative contribution to the total average
+depth.
+\item A contig's name and its assembly group are concatenated and used as row
+names for the matrix.
+\item The function finally returns an OTU table object with taxa as rows.
+}
 }
 \examples{
 depth_files <- c("depth_file1.txt", "depth_file2.txt")

@@ -14,20 +14,28 @@ barplot_depths(
 )
 }
 \arguments{
-\item{ps}{A phyloseq object or a list of phyloseq objects. If a list is provided, all objects are combined.}
+\item{ps}{A phyloseq object or a list of phyloseq objects. If a list
+is provided, all objects are combined.}
 
-\item{group}{The name of the column to be used for grouping on the x-axis. Defaults to "Sample".}
+\item{group}{The name of the column to be used for grouping on the
+x-axis. Defaults to "Sample".}
 
-\item{fill}{(Optional) The name of the column to apply a fill color to bars. NULL by default, which results in no fill.}
+\item{fill}{(Optional) The name of the column to apply a fill color
+to bars. NULL by default, which results in no fill.}
 
-\item{position}{Determines how to position bars. "stack" stacks bars on top of each other, "dodge" places them side by side. Defaults to "stack".}
+\item{position}{Determines how to position bars. "stack" stacks bars
+on top of each other, "dodge" places them side by side. Defaults to
+"stack".}
 
-\item{wrap}{(Optional) The name of a column to be used for facetting the plot into separate panels.}
+\item{wrap}{(Optional) The name of a column to be used for facetting
+the plot into separate panels.}
 
-\item{...}{Additional arguments passed on to \code{geom_col} from \code{ggplot2}.}
+\item{...}{Additional arguments passed on to \code{geom_col} from
+\code{ggplot2}.}
 }
 \value{
-A \code{ggplot} object representing the bar plot. Can be printed or modified further.
+A \code{ggplot} object representing the bar plot. Can be printed
+or modified further.
 }
 \description{
 Create a Bar Plot of Abundances from Phyloseq Data with Grouping and Fill Options

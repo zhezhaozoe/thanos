@@ -7,14 +7,14 @@
 barplot_depths_by_sample(ps, fill = NULL, position = "stack", ...)
 }
 \arguments{
-\item{ps}{A phyloseq object or a list of such objects. If a list is provided, it
-merges the data from all objects.}
+\item{ps}{A phyloseq object or a list of such objects. If a list is
+provided, it merges the data from all objects.}
 
-\item{fill}{The variable by which to fill the bars. If \code{NULL}, bars won't be
-filled according to a variable. The default is \code{NULL}.}
+\item{fill}{The variable by which to fill the bars. If \code{NULL}, bars
+won't be filled according to a variable. The default is \code{NULL}.}
 
-\item{position}{The position adjustment of bars. Can be "stack", "fill", or
-others as defined by \code{ggplot2}. Default is "stack".}
+\item{position}{The position adjustment of bars. Can be "stack",
+"fill", or others as defined by \code{ggplot2}. Default is "stack".}
 
 \item{...}{Additional arguments passed to \code{geom_col}.}
 }
@@ -22,10 +22,10 @@ others as defined by \code{ggplot2}. Default is "stack".}
 A \code{ggplot} object representing the bar plot.
 }
 \description{
-This function plots the aggregated abundance of genes by sample and allows for
-customization of the filling color of the bars. Unlike \code{barplot_depths()},
-this function retains the sample data, enabling the use of \code{facet_wrap(~whatever)}
-for further customization.
+This function plots the aggregated abundance of genes by sample and
+allows for customization of the filling color of the bars. Unlike
+\code{barplot_depths()}, this function retains the sample data, enabling
+the use of \code{facet_wrap(~whatever)} for further customization.
 }
 \examples{
 ## Assuming 'ps' is a phyloseq object and 'ps_list' is a list of phyloseq objects

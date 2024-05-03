@@ -4,7 +4,10 @@
 #' @param level Taxonomic level of the mOTUs in the file
 #' Generate Taxonomy Table from mOTUs Data
 #'
-#' @return A taxonomy table with one column named after the specified taxonomic level (`level`). This column contains the taxonomic names, and the row names of the table are the mOTU identifiers extracted from the data.
+#' @return A taxonomy table with one column named after the specified
+#' taxonomic level (`level`). This column contains the taxonomic names, and
+#' the row names of the table are the mOTU identifiers extracted from the
+#' data.
 #'
 #' @examples
 #' tax_table <- make_motus_tax_table("path/to/motus_data.txt")
@@ -22,13 +25,15 @@ make_motus_tax_table <- function(path, level = "mOTU") {
 
 #' Create taxonomic table for mOTUs using GTDB identifiers
 #'
-#' This function takes a user's mOTUs table and a mapping file between mOTUs and GTDB
-#' identifiers to create a new taxonomic table with GTDB taxonomy.
+#' This function takes a user's mOTUs table and a mapping file between
+#' mOTUs and GTDB identifiers to create a new taxonomic table with GTDB
+#' taxonomy.
 #'
 #' @param motus_table The user's mOTUs table with rownames as mOTUs identifiers.
 #' @param gtdb_map Path to the GTDB mapping file.
 #'
-#' @return A `tax_table` object containing the GTDB taxonomy for the input mOTUs.
+#' @return A `tax_table` object containing the GTDB taxonomy for the
+#' input mOTUs.
 #'
 #' @examples
 #' # Assuming you've already downloaded the GTDB mapping file:
@@ -38,25 +43,28 @@ make_motus_tax_table <- function(path, level = "mOTU") {
 #'
 #' @export
 #'
-#' @note Please ensure the GTDB mapping file is available at the specified path. For mOTUs3,
-#' the file can be downloaded from https://sunagawalab.ethz.ch/share/MOTU_GTDB/mOTUs_3.0.0_GTDB_tax.tsv.
-#' If the file is not found, the function will stop and prompt to download or specify the mapping file.
+#' @note Please ensure the GTDB mapping file is available at the
+#' specified path. For mOTUs3, the file can be downloaded from
+#' https://sunagawalab.ethz.ch/share/MOTU_GTDB/mOTUs_3.0.0_GTDB_tax.tsv.
+#' If the file is not found, the function will stop and prompt to
+#' download or specify the mapping file.
 make_motus_tax_table_from_gtdb <- function(motus_table, gtdb_map) {
   if (!file.exists(gtdb_map)) {
     error("Please download or create a mapping between mOTUs and GTDB identifier. For mOTUs3, the file can be downloaded at https://sunagawalab.ethz.ch/share/MOTU_GTDB/mOTUs_3.0.0_GTDB_tax.tsv")
   }
-  gtdb <- as.matrix(fread(gtdb_map, header = F), rownames = 1)
+  gtdb <- as.matrix(fread(gtdb_map, header = FALSE), rownames = 1)
   gtdb_tax_table <- gtdb[rownames(motus_table), ]
   tax_table(gtdb_tax_table)
 }
 
 #' Shorten Common Name to Species Initialism
 #'
-#' This function takes a common species name and shortens it into an initialism
-#' format consisting of the first letter of the first word followed by a period
-#' and the full second word. Leading and trailing whitespaces are trimmed.
-#' Common long words like "Candidatus" and "species incertae sedis" are abbreviated.
-#' Useful for reducing the legend clutter when plotting.
+#' This function takes a common species name and shortens it into an
+#' initialism format consisting of the first letter of the first word
+#' followed by a period and the full second word. Leading and trailing
+#' whitespaces are trimmed. Common long words like "Candidatus" and
+#' "species incertae sedis" are abbreviated. Useful for reducing the
+#' legend clutter when plotting.
 #'
 #' @param common_name A string containing the common name of a species.
 #' @return A string with the abbreviated species name.
@@ -84,7 +92,9 @@ shorten_species_name <- function(common_name) {
   parts <- strsplit(common_name, " ")[[1]]
   if (length(parts) == 2) {
     if (parts[2] != "sp.") {
-      common_name <- paste0(substr(parts[1], 1, 1), ". ", paste(parts[2], collapse = " "))
+      common_name <- paste0(
+        substr(parts[1], 1, 1), ". ", paste(parts[2], collapse = " ")
+      )
     }
     return(paste0(candidatus, common_name))
   }
@@ -111,25 +121,34 @@ shorten_species_name <- function(common_name) {
 #'
 #' @export
 read_hmmer_tblout <- function(file) {
-  all_lines <- fread(file, sep = "", showProgress = F)[[1]]
-  content_lines <- grep("^#", all_lines, value = T, invert = T)
+  all_lines <- fread(file, sep = "", showProgress = FALSE)[[1]]
+  content_lines <- grep("^#", all_lines, value = TRUE, invert = TRUE)
   tblout <- setDT(tstrsplit(content_lines, "\\s+")[1:18])
-  names(tblout) <- c("Target", "Accession_target", "Query", "Accession_query", "Full_evalue", "Full_score", "Full_bias", "Best_Evalue", "Best_score", "Best_bias", "exp", "reg", "clu", "ov", "env", "dom", "rep", "inc")
+  names(tblout) <- c(
+    "Target", "Accession_target", "Query", "Accession_query",
+    "Full_evalue", "Full_score", "Full_bias",
+    "Best_Evalue", "Best_score", "Best_bias",
+    "exp", "reg", "clu", "ov", "env", "dom", "rep", "inc"
+  )
   tblout$Description <- gsub("([^ ]+ +){18}", "", content_lines)
-  type.convert(tblout, as.is = T, numerals = "no.loss")
+  type.convert(tblout, as.is = TRUE, numerals = "no.loss")
 }
 
 #' Read GTDB-Tk classification output
 #'
-#' Reads a GTDB-Tk (Genome Taxonomy Database Toolkit) classification file and extracts
-#' the taxonomic classification into a phyloseq-friendly format. It parses the classifications
-#' into domain, phylum, class, order, family, genus, and species, and returns a matrix
-#' with these categories as column names and genomes as row names.
+#' Reads a GTDB-Tk (Genome Taxonomy Database Toolkit) classification
+#' file and extracts the taxonomic classification into a
+#' phyloseq-friendly format. It parses the classifications into domain,
+#' phylum, class, order, family, genus, and species, and returns a
+#' matrix with these categories as column names and genomes as row
+#' names.
 #'
-#' @param file A string specifying the path to the GTDB-Tk classification output file.
+#' @param file A string specifying the path to the GTDB-Tk
+#' classification output file.
 #'
-#' @return A matrix where rows are genomes (user_genome) and columns are the taxonomic
-#' categorizations (Domain, Phylum, Class, Order, Family, Genus, Species).
+#' @return A matrix where rows are genomes (user_genome) and columns are
+#' the taxonomic categorizations (Domain, Phylum, Class, Order, Family,
+#' Genus, Species).
 #'
 #' @import data.table
 #'
@@ -142,13 +161,14 @@ read_hmmer_tblout <- function(file) {
 read_gtdbtk <- function(file) {
   d <- fread(file, select = c("user_genome", "classification"))
   d_classification <- d[, tstrsplit(classification, ";?[dpcofgs]__")[-1]]
-  setattr(d_classification, "names", c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
+  names(d_classification) <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
   as.matrix(setDF(d_classification, rownames = d$user_genome))
 }
 
 #' Invert Names in a Named Vector
 #'
-#' Swaps the names and values in a named vector to create a new vector with values as names and names as values.
+#' Swaps the names and values in a named vector to create a new vector
+#' with values as names and names as values.
 #'
 #' @param v A named vector.
 #'
@@ -162,10 +182,41 @@ read_gtdbtk <- function(file) {
 #' @export
 inverted_names <- function(v) {
   # make sure the names are unique
-  stopifnot(length(v) == length(unique(v)))
-  setNames(names(v), v)
+  stopifnot(length(unlist(v)) == length(unique(unlist(v))))
+  with(stack(v), split(as.character(ind), values))
 }
 
+#' Merged Hits to OTU Table
+#'
+#' This function takes a merged hits data.table (with queries and
+#' controls), calculates the depths ratio, and returns an OTU
+#' (Operational Taxonomic Unit) table, optionally transposing the table
+#' based on taxa orientation.
+#' It operates on the result of get_hits_depths() when the `phyloseq`
+#' argument is FALSE.
+#'
+#' @param mer A `data.table` with matched pairs of columns for each
+#' taxon, each pair consisting of a ".x" and ".y" column, and a column
+#' named "ID" that contains the taxa names or IDs.
+#' @param taxa_are_rows A logical parameter indicating whether taxa
+#' should be represented by rows (TRUE) or by columns (FALSE) in the
+#' final OTU table.
+#'
+#' @details This function cleans the resulting matrix by replacing NaNs and Infs
+#' with NAs.
+#'
+#' @return Returns an `otu_table` object with ratios of hits, with
+#' NaNs and Infs set to NA. If `taxa_are_rows` is TRUE, taxa will be
+#' represented by rows; otherwise, they will be represented by columns.
+#'
+#' @import data.table
+#' @importFrom phyloseq otu_table
+#' @examples
+#' # Assuming `dt_hits` is a data.table with matched pairs of hit columns (e.g., "gene1.x", "gene1.y")
+#' # and an "ID" column with taxa names.
+#' otu_table <- merged_hits_to_otu_table(dt_hits, TRUE)
+#'
+#' @export
 merged_hits_to_otu_table <- function(mer, taxa_are_rows) {
   res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
   setnames(res, names(res), sub("\\.x$", "", names(res)))
@@ -174,29 +225,38 @@ merged_hits_to_otu_table <- function(mer, taxa_are_rows) {
   m[is.nan(m)] <- NA
   m[is.infinite(m)] <- NA
   if (isTRUE(taxa_are_rows)) {
-    otu_table(m, taxa_are_rows = TRUE)
+    phyloseq::otu_table(m, taxa_are_rows = TRUE)
   } else {
-    otu_table(t(m), taxa_are_rows = FALSE)
+    phyloseq::otu_table(t(m), taxa_are_rows = FALSE)
   }
 }
 
 #' Perform HMM Search on a KEGG Orthology (KO) Alignment
 #'
-#' Given a KO identifier, this function retrieves the corresponding protein sequences and builds a Multiple Sequence Alignment (MSA), then builds a Hidden Markov Model (HMM) based on the MSA, and then searches
-#' the HMM against a set of sequence databases. The function allows adjusting the search method,
-#' computational resources, and inclusion threshold.
+#' Given a KO identifier, this function retrieves the corresponding
+#' protein sequences and builds a Multiple Sequence Alignment (MSA),
+#' then builds a Hidden Markov Model (HMM) based on the MSA, and then
+#' searches the HMM against a set of sequence databases. The function
+#' allows adjusting the search method, computational resources, and
+#' inclusion threshold.
 #'
-#' @param ko A character string representing the KEGG Orthology (KO) identifier.
-#' @param method Character. The method used for performing the MSA. Defaults to "Muscle".
-#' @param cpu Integer. The number of CPUs to use for the search. Defaults to 1.
-#' @param incE Numeric. The inclusion threshold for the HMM search. Defaults to 1e-6.
+#' @param ko A character string representing the KEGG Orthology (KO)
+#' identifier.
+#' @param method Character. The method used for performing
+#' the MSA. Defaults to "Muscle".
+#' @param cpu Integer. The number of CPUs to use for the search.
+#' Defaults to 1.
+#' @param incE Numeric. The ' inclusion threshold for the HMM search.
+#' Defaults to 1e-6.
 #' @param ... Additional arguments passed to kegg_kegg_msa().
 #'
 #' @return The result of the HMM search.
 #' @examples
 #' tblout_from_ko("K00001")
 #' @export
-tblout_from_ko <- function(ko, dbs, method = "Muscle", cpu = 1, incE = 1e-6, hmmer_path = "", ...) {
+tblout_from_ko <- function(
+    ko, dbs, method = "Muscle",
+    cpu = 1, incE = 1e-6, hmmer_path = "", ...) {
   aln <- get_kegg_msa(ko, method = method, ...)
   tblout_from_afa(aln)
 }
@@ -223,9 +283,18 @@ tblout_from_ko <- function(ko, dbs, method = "Muscle", cpu = 1, incE = 1e-6, hmm
 #' print(search_results)
 #'
 #' @export
-tblout_from_afa <- function(afa, dbs, parallel_processes = 1, cpus_per_process = 1, incE = 1e-6, hmmer_path = "") {
+tblout_from_afa <- function(
+    afa, dbs, parallel_processes = 1, cpus_per_process = 1,
+    incE = 1e-6, hmmer_path = "") {
   hmm <- build_hmm(afa, hmmer_path = hmmer_path)
-  search_hmm(hmm, dbs, parallel_processes = parallel_processes, cpus_per_process = cpus_per_process, incE = incE, hmmer_path = hmmer_path)
+  search_hmm(
+    hmm,
+    dbs,
+    parallel_processes = parallel_processes,
+    cpus_per_process = cpus_per_process,
+    incE = incE,
+    hmmer_path = hmmer_path
+  )
 }
 
 #' Perform a Multiple Sequence Alignment and Find Hits in Databases
