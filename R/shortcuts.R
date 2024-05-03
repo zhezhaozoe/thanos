@@ -1,86 +1,22 @@
-#' Perform HMM Search on a KEGG Orthology (KO) Alignment
+#' Build an HMM profile for the given KO identifiers
 #'
-#' Given a KO identifier, this function retrieves the corresponding protein sequences and builds a Multiple Sequence Alignment (MSA), then builds a Hidden Markov Model (HMM) based on the MSA, and then searches
-#' the HMM against a set of sequence databases. The function allows adjusting the search method,
-#' computational resources, and inclusion threshold.
+#' Given a KO identifier, this function retrieves the corresponding protein sequences and builds a Multiple Sequence Alignment (MSA), then builds a Hidden Markov Model (HMM) based on the MSA.
 #'
 #' @param ko A character string representing the KEGG Orthology (KO) identifier.
 #' @param method Character. The method used for performing the MSA. Defaults to "Muscle".
-#' @param cpu Integer. The number of CPUs to use for the search. Defaults to 1.
-#' @param incE Numeric. The inclusion threshold for the HMM search. Defaults to 1e-6.
 #' @param ... Additional arguments passed to kegg_kegg_msa().
 #'
-#' @return The result of the HMM search.
+#' @return The path to the HMM file.
 #' @examples
-#' tblout_from_ko("K00001")
+#' hmm_from_ko("K00001")
 #' @export
-tblout_from_ko <- function(ko, dbs, method = "Muscle", cpu = 1, incE = 1e-6, ...) {
-  aln <- get_kegg_msa(ko, method = method, ...)
-  hmm <- build_hmm(aln)
-  search_hmm(hmm, dbs, cpu = cpu, incE = incE)
-}
-
-#' Perform HMM-based search from an alignment
-#'
-#' This function takes aligned fasta sequences (AFA) as an input, constructs
-#' a Hidden Markov Model (HMM), and uses it to search in designated databases.
-#'
-#' @param afa Aligned fasta sequences in string format or an object that
-#'  can be interpreted as such.
-#' @param cpu The number of CPU cores to use for the search process.
-#'  Defaults to 1 to ensure compatibility with all systems.
-#' @param incE The inclusion threshold E-value for reported hits in the
-#'  search. Lower values are more stringent. Defaults to 1e-6.
-#' @param ... Additional arguments to be passed to the search function.
-#'
-#' @return Returns the path to the tblout results.
-#'
-#' @examples
-#' # Example assuming 'sequences.afa' is your aligned fasta file
-#' afa_content <- readLines("sequences.afa")
-#' search_results <- tblout_from_afa(afa_content)
-#' print(search_results)
-#'
-#' @export
-tblout_from_afa <- function(afa, dbs, cpu = 1, incE = 1e-6) {
-  hmm <- build_hmm(afa)
-  search_hmm(hmm, dbs, cpu = cpu, incE = incE)
-}
-
-#' Perform a Multiple Sequence Alignment and Find Hits in Databases
-#'
-#' This function first reads a fasta file containing amino acid sequences, performs
-#' a multiple sequence alignment using the specified method, and then searches
-#' for hits in databases using the aligned sequences. The results are returned
-#' in a specific format.
-#'
-#' @param faa Character. The path to the fasta file containing amino acid sequences.
-#' @param dbs Character or Character vector. Specifies the databases against which the
-#' sequences will be searched.
-#' @param method Character. The default method for sequence alignment is "Muscle".
-#' Other methods supported by `msa` function can be used.
-#' @param cpu Integer. The number of CPU threads to use for the search. The default is 1.
-#' @param incE Numeric. The inclusion threshold E-value for considering a database hit
-#' significant. Defaults to 1e-6.
-#' @param ... Additional arguments passed to the `msa` function.
-#'
-#' @return Returns the result of searching the aligned sequences against specified
-#' databases. The format of the returned object depends on the implementation of
-#' `tblout_from_afa`.
-#'
-#' @examples
-#' \dontrun{
-#' tblout_from_faa("sequences.faa", dbs=c("db1", "db2"), method="ClustalW")
-#' }
-#'
-#' @export
-#' @importFrom Biostrings readAAStringSet
-#' @import msa
-tblout_from_faa <- function(faa, dbs, method = "Muscle",
-cpu = 1, incE = 1e-6, ...) {
-  mySequences <- Biostrings::readAAStringSet(faa)
-  aln <- msa::msa(mySequences, method = method, ...)
-  tblout_from_afa(aln, cpu = cpu, incE = incE)
+build_hmm_from_ko <- function(kos, method = "Muscle", hmmer_path = "", ...) {
+  if (is.null(names(kos))) {
+    names(ko) <- kos
+  }
+  sapply(simplify = FALSE, kos, function(ko) {
+    build_hmm(get_kegg_msa(ko, method = method, ...), hmmer_path = hmmer_path)
+  })
 }
 
 #' Obtain Contigs Hits Depths from Depth Files
@@ -116,13 +52,8 @@ linker = contigs_linker, verbose = F) {
       linker,
       phyloseq = F)
   })
-  mer <- rbindlist(mers, use.names = T)[, lapply(.SD, sum), by = "ID"]
-  res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
-  setnames(res, names(res), sub("\\.x$", "", names(res)))
-  m <- as.matrix(res, rownames.value = mer$ID)
-  # XXX: set NaNs (0/0) to zero
-  m[is.nan(m)] <- 0
-  otu_table(m, taxa_are_rows = T)
+  mer <- rbindlist(mers, use.names = TRUE)[, lapply(.SD, sum), by = "ID"]
+  merged_hits_to_otu_table(mer, taxa_are_rows = TRUE)
 }
 
 #' Retrieve depths of hits from KEGG Orthology entries across samples
@@ -156,6 +87,7 @@ linker = contigs_linker, verbose = F) {
 get_hits_depths_from_kos <- function(kos, ps, dbs,
 control_tblout, linker, msa_method = "Muscle",
 cpu = 1, incE = 1e-6, taxrank = NULL, ...) {
+  .Deprecated("get_hits_depths_from_hmm()", package = "thanos")
   if (is.null(names(kos))) {
     names(kos) <- kos
   }
@@ -172,6 +104,113 @@ cpu = 1, incE = 1e-6, taxrank = NULL, ...) {
       query_tblout, control_tblout,
       linker,
       taxrank = taxrank)
+  })
+}
+
+#' Retrieve depths of hits from KEGG Orthology entries across samples
+#'
+#' @description This function executes a HMMER search against a database for a set of query and control HMM profiles. It returns the hits depths from KEGG Orthology (KO) identifiers for each query relative to the control.
+#'
+#' @param queries_hmm A character vector of paths to the query HMM files.
+#' @param control_hmm A character string specifying the path to the control HMM file.
+#' @param ps A parameter set or data required by `get_hits_depths` function.
+#' @param dbs A character vector specifying the paths to the database files to be searched.
+#' @param linker A parameter or function used to connect or process the information between the query and control results.
+#' @param cpu The number of CPUs to use for the HMMER search. Defaults to 1.
+#' @param incE The inclusion E-value threshold for the HMMER search. Defaults to 1e-6 to filter significant hits.
+#' @param taxrank An optional parameter specifying the taxonomic rank consideration. Can be used within `get_hits_depths` function.
+#' @param ... Additional arguments passed to the `get_hits_depths` function.
+#'
+#' @return A list where each element corresponds to the result of `get_hits_depths` for a query HMM, containing information on the hits' depths based on KO identifiers.
+#'
+#' @examples
+#' # Assuming proper environment setup and availability of required files
+#' queries = c("path/to/query1.hmm", "path/to/query2.hmm")
+#' control = "path/to/control.hmm"
+#' db_paths = c("path/to/db1", "path/to/db2")
+#' # Example call
+#' results = get_hits_depths_from_hmm(queries, control, parameter_set, db_paths, linker_function)
+#'
+#' @export
+get_hits_depths_from_hmm <- function(queries_hmm, control_hmm, ps, dbs, linker, taxrank = NULL, parallel_processes = 1, cpus_per_process = 1, incE = 1e-6, hmmer_path = "") {
+  control_tblout <- search_hmm(control_hmm, dbs, parallel_processes = parallel_processes, cpus_per_process = cpus_per_process, incE = incE, hmmer_path = hmmer_path)
+  sapply(simplify = FALSE, queries_hmm, function(query_hmm) {
+    query_tblout <- search_hmm(query_hmm, dbs, parallel_processes = parallel_processes, cpus_per_process = cpus_per_process, incE = incE, hmmer_path = hmmer_path)
+    get_hits_depths(
+      ps,
+      query_tblout, control_tblout,
+      linker,
+      taxrank = taxrank)
+  })
+}
+
+#' Get Contigs Hits and Depths from HMM Searches
+#'
+#' This function performs HMM searches for query and control sequences against a set of databases, retrieves hits, and calculates depths for contigs.
+#' 
+#' @param queries_hmm Character vector specifying the file paths to the query HMM profiles.
+#' @param control_hmm Character string specifying the file path to the control HMM profile.
+#' @param depths_files Character vector with paths to the depth files.
+#' @param sub_pattern Character string representing the pattern to identify contig names within depth files.
+#' @param sub_replacement Character string with the replacement for the sub_pattern in contig names.
+#' @param dbs Character vector specifying the paths to the databases to search against.
+#' @param linker Function that links hits to contigs. If not supplied, a default contigs_linker function will be used.
+#' @param cpu Integer specifying the number of CPUs to use for HMM searches. Defaults to 1.
+#' @param incE Numeric, inclusion E-value threshold for HMM searches. Defaults to 1e-6.
+#' @param hmmer_path Character string specifying the path to the HMMER binaries. If empty, system's PATH will be used.
+#' @param verbose Logical indicating whether to print detailed progress messages. Defaults to FALSE.
+#'
+#' @return A list where each element corresponds to the results from each query HMM, containing detailed hits and depths information for contigs.
+#'
+#' @examples
+#' # Assuming appropriate files and HMM profiles exist:
+#' result <- get_contigs_hits_depths_from_hmm(queries_hmm = c("/path/to/query1.hmm", "/path/to/query2.hmm"),
+#'                                            control_hmm = "/path/to/control.hmm",
+#'                                            depths_files = c("/path/to/depth1.tsv", "/path/to/depth2.tsv"),
+#'                                            sub_pattern = "_[0-9]+$",
+#'                                            sub_replacement = "",
+#'                                            dbs = c("/path/to/db1", "/path/to/db2"),
+#'                                            linker = custom_linker_function,
+#'                                            cpu = 4, incE = 1e-10,
+#'                                            hmmer_path = "/opt/hmmer/bin/",
+#'                                            verbose = TRUE)
+#'
+#' @export
+get_contigs_hits_depths_from_hmm <- function(
+    queries_hmm, control_hmm,
+    depths_files, sub_pattern, sub_replacement,
+    dbs, linker = contigs_linker,
+    parallel_processes = 1, cpus_per_process = 1, incE = 1e-6, hmmer_path = "",
+    verbose = FALSE) {
+  if (is.null(names(kos))) {
+    names(kos) <- kos
+  }
+  control_tblout <- search_hmm(
+    control_hmm,
+    dbs,
+    parallel_processes = parallel_processes,
+    cpus_per_process = cpus_per_process,
+    incE = incE,
+    hmmer_path = hmmer_path
+  )
+  sapply(simplify = FALSE, kos, function(ko) {
+    query_tblout <- search_hmm(
+      queries_hmm,
+      dbs,
+      parallel_processes = parallel_processes,
+      cpus_per_process = cpus_per_process,
+      incE = incE,
+      hmmer_path = hmmer_path
+    )
+    get_contigs_hits_depths(
+      depths_files,
+      sub_pattern,
+      sub_replacement,
+      query_tblout,
+      control_tblout,
+      linker = linker,
+      verbose = verbose
+    )
   })
 }
 
@@ -209,6 +248,7 @@ get_contigs_hits_depths_from_kos <- function(kos, depths_files,
 sub_pattern, sub_replacement, dbs,
 control_tblout, linker = contigs_linker,
 msa_method = "Muscle", cpu = 1, incE = 1e-6, verbose = F, ...) {
+  .Deprecated("get_contigs_hits_depths_from_hmm()", "thanos")
   if (is.null(names(kos))) {
     names(kos) <- kos
   }
