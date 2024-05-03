@@ -21,7 +21,7 @@ get_kegg_msa <- function(ko, nmax = Inf, method = "Muscle", ...) {
   stopifnot(length(ko) == 1)
   genes <- names(KEGGREST::keggFind("genes", ko))
   if (nmax < Inf) {
-    genes <- genes[1:min(length(genes), nmax)]
+    genes <- genes[seq_len(min(length(genes), nmax))]
   }
   # keggGet expects at most 10 genes
   batches <- split(genes, 0:(length(genes) - 1) %/% 10)
@@ -66,13 +66,27 @@ get_kegg_kos_from_module <- function(module) {
   unlist(strsplit(kos_raw, ","))
 }
 
+#' Retrieve KEGG reactions from a specified module as a graph
+#'
+#' This function fetches reactions for a specified KEGG module using the KEGGREST API and processes them to create a graph representation. In this graph, the nodes are compounds and the edges are reactions.
+
+#' @param module A character string specifying the KEGG module ID (e.g. "M00001").
+#'
+#' @details The KEGG graph has compounds as nodes and reactions as edges. Each edge can actually be associated with multiple reactions, in which case all of them occur. (Typically, they are the same chemical transformation with different cofactors or performed by different enzymes.) In turn, each reaction can be associated with one or more KOs. The same KO can be associated to multiple reactions as well.
+#'
+#' @return A data.table object representing the simplified graph with the following columns: `from` (ID of the starting compound), `to` (ID of the resulting compound), `reaction` (concatenated string of reaction IDs and their associated KOs, separated by "|"), `from_name` (name of the starting compound), and `to_name` (name of the resulting compound).
+#'
+#' @examples
+#' \dontrun{
+#'   module <- "M00001"
+#'   graph <- get_kegg_reactions_from_module(module)
+#'   print(graph)
+#' }
+#'
 #' @import data.table
 #' @importFrom KEGGREST keggGet
 #' @export
 get_kegg_reactions_from_module <- function(module) {
-  # NOTE: make a simplification: for reactions with multiple input/output compounds, the multiple compounds are treated as just one. Let's see how the graph turns out before making anything more complex.
-  # NOTE: in general, there is a many-to-many relationship between reaction IDs and KOs. Here we assume that the relationship is just one reaction ID -> many KOs.
-  # NOTE: I now think the correct interface is to make a bipartite graph with reactions and compounds as nodes. the links can be only from compound to reaction and from reaction to another compound. there can be multiple reactions for the same link, in which case they can all occur, typically with different cofactors (e.g. with either ATP or ADP as the P donor). Then, independently of this, each KO is associated to one or more reactions.
   stopifnot(length(module) == 1)
   m <- KEGGREST::keggGet(module)[[1]]
   graph <- setNames(setDT(tstrsplit(m$REACTION, " -> ")), c("from", "to"))
