@@ -79,8 +79,10 @@ build_hmm <- function(aln, hmmer_path = "") {
 #' db_files <- c("database1.fasta", "database2.fasta")
 #' search_results <- search_hmm(hmm_file, db_files, cpu = 2, incE = 1e-5)
 #' @export
-search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6, hmmer_path = "") {
-  tblout <- tempfile(fileext = ".tblout")
+search_hmm <- function(
+    hmm, dbs,
+    parallel_processes = 1, cpus_per_process = 1, incE = 1e-6,
+    hmmer_path = "") {
   if (is.null(names(dbs))) {
     names(dbs) <- dbs
   }
@@ -89,15 +91,18 @@ search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6, hmmer_path = "") {
   } else {
     "hmmsearch"
   }
-  data.table::rbindlist(lapply(dbs, function(target) {
-    system2("hmmsearch", c(
+  data.table::rbindlist(parallel::mclapply(mc.cores = parallel_processes, dbs, function(target) {
+    tblout <- tempfile(fileext = ".tblout")
+    system2(hmmsearch_cmd, c(
         "--tblout", tblout,
-        "--cpu", cpu,
+        "--cpu", cpus_per_process,
         "--incE", incE,
         hmm,
         target),
       stdout = NULL)
-    read_hmmer_tblout(tblout)
+    res <- read_hmmer_tblout(tblout)
+    unlink(tblout)
+    res
   }), id = "SeqFile")
 }
 
@@ -117,6 +122,8 @@ search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6, hmmer_path = "") {
 #' @details The function prunes the phyloseq object to include only taxa that are present in both the query and control datasets based on the `linker` function. If a taxonomic rank is specified, the function aggregates hits at that rank and recalculates taxa names. It also warns about queries not found in the control. It performs calculates the depth ratios between query and control conditions.
 #' Two linker functions are provided: mags_linker() and contigs_linker().
 #'
+#' @import data.table
+#
 #' @examples
 #' ```
 #' # Assume ps is a phyloseq object with taxa, otu_table etc., query_tblout and control_tblout are loaded
@@ -130,16 +137,26 @@ search_hmm <- function(hmm, dbs, cpu = 1, incE = 1e-6, hmmer_path = "") {
 #' # Call the get_hits_depths function with aggregation at genus level
 #' get_hits_depths_aggregated <- get_hits_depths(ps, query_tblout, control_tblout, linker_function, taxrank = "Genus")
 #' ```
-get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = NULL, phyloseq = TRUE) {
-  # stopifnot(length(query_tblout) == 1)
-  # stopifnot(length(control_tblout) == 1)
-  query_ps <- prune_taxa(unique(linker(query_tblout$SeqFile, query_tblout$Target)), ps)
-  control_ps <- prune_taxa(unique(linker(control_tblout$SeqFile, control_tblout$Target)), ps)
+get_hits_depths <- function(
+    ps, query_tblout, control_tblout, linker,
+    taxrank = NULL, phyloseq = TRUE) {
+  query_ps <- prune_taxa(
+    unique(linker(query_tblout$SeqFile, query_tblout$Target)),
+    ps
+  )
+  control_ps <- prune_taxa(
+    unique(linker(control_tblout$SeqFile, control_tblout$Target)),
+    ps
+  )
   if (!is.null(taxrank)) {
     query_ps <- tax_glom(query_ps, taxrank)
-    taxa_names(query_ps) <- apply(tax_table(query_ps), 1, function(x) paste(na.omit(x), collapse = ";"))
+    taxa_names(query_ps) <- apply(tax_table(query_ps), 1, function(x) {
+      paste(na.omit(x), collapse = ";")
+    })
     control_ps <- tax_glom(control_ps, taxrank)
-    taxa_names(control_ps) <- apply(tax_table(control_ps), 1, function(x) paste(na.omit(x), collapse = ";"))
+    taxa_names(control_ps) <- apply(tax_table(control_ps), 1, function(x) {
+      paste(na.omit(x), collapse = ";")
+    })
     query_otu <- if (taxa_are_rows(ps)) {
       otu_table(query_ps)
     } else {
@@ -150,9 +167,9 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
     } else {
       t(otu_table(control_ps))
     }
-    queries_not_controlled <- setdiff(rownames(query_otu), rownames(control_otu))
-    if (length(queries_not_controlled)) {
-      warning(queries_not_controlled, " do not have any control hits")
+    queries_no_control <- setdiff(rownames(query_otu), rownames(control_otu))
+    if (length(queries_no_control)) {
+      warning(queries_no_control, " do not have any control hits")
     }
     mer <- merge(
       as.data.table(query_otu, keep.rownames = "ID"),
@@ -162,12 +179,7 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
     if (isFALSE(phyloseq)) {
       return(mer)
     }
-    res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
-    setnames(res, names(res), sub("\\.x$", "", names(res)))
-    m <- as.matrix(res, rownames.value = mer$ID)
-    # XXX: set NaNs (0/0) to zero
-    m[is.nan(m)] <- 0
-    otu_table(query_ps) <- otu_table(m, taxa_are_rows = T)
+    otu_table(query_ps) <- merged_hits_to_otu_table(mer, taxa_are_rows = TRUE)
     return(query_ps)
   } else if (taxa_are_rows(ps)) {
     mer <- merge(
@@ -178,12 +190,12 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
     if (isFALSE(phyloseq)) {
       return(mer)
     }
-    res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
-    setnames(res, names(res), sub("\\.x$", "", names(res)))
-    m <- as.matrix(res, rownames.value = mer$ID)
-    # XXX: set NaNs (0/0) to zero
-    m[is.nan(m)] <- 0
-    return(phyloseq(otu_table(m, taxa_are_rows = T), access(ps, "sam_data"), access(ps, "phy_tree"), access(ps, "ref_seq")))
+    phyloseq(
+      merged_hits_to_otu_table(mer, taxa_are_rows = TRUE)
+      access(ps, "sam_data"),
+      access(ps, "phy_tree"),
+      access(ps, "ref_seq")
+    )
   } else {
     # taxa are cols
     mer <- merge(
@@ -194,12 +206,12 @@ get_hits_depths <- function(ps, query_tblout, control_tblout, linker, taxrank = 
     if (isFALSE(phyloseq)) {
       return(mer)
     }
-    res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
-    setnames(res, names(res), sub("\\.x$", "", names(res)))
-    m <- t(as.matrix(res, rownames.value = mer$ID))
-    # XXX: set NaNs (0/0) to zero
-    m[is.nan(m)] <- 0
-    return(phyloseq(otu_table(m, taxa_are_rows = F), access(ps, "sam_data"), access(ps, "phy_tree"), access(ps, "ref_seq")))
+    phyloseq(
+      merged_hits_to_otu_table(mer, taxa_are_rows = FALSE)
+      access(ps, "sam_data"),
+      access(ps, "phy_tree"),
+      access(ps, "ref_seq")
+    )
   }
 }
 

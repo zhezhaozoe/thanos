@@ -165,3 +165,102 @@ inverted_names <- function(v) {
   stopifnot(length(v) == length(unique(v)))
   setNames(names(v), v)
 }
+
+merged_hits_to_otu_table <- function(mer, taxa_are_rows) {
+  res <- mer[, .SD, .SDcols = patterns("*\\.x$")] / mer[, .SD, .SDcols = patterns("*\\.y$")]
+  setnames(res, names(res), sub("\\.x$", "", names(res)))
+  m <- as.matrix(res, rownames.value = mer$ID)
+  # XXX: set NaNs (0/0) and Infs (x/0) to NA
+  m[is.nan(m)] <- NA
+  m[is.infinite(m)] <- NA
+  if (isTRUE(taxa_are_rows)) {
+    otu_table(m, taxa_are_rows = TRUE)
+  } else {
+    otu_table(t(m), taxa_are_rows = FALSE)
+  }
+}
+
+#' Perform HMM Search on a KEGG Orthology (KO) Alignment
+#'
+#' Given a KO identifier, this function retrieves the corresponding protein sequences and builds a Multiple Sequence Alignment (MSA), then builds a Hidden Markov Model (HMM) based on the MSA, and then searches
+#' the HMM against a set of sequence databases. The function allows adjusting the search method,
+#' computational resources, and inclusion threshold.
+#'
+#' @param ko A character string representing the KEGG Orthology (KO) identifier.
+#' @param method Character. The method used for performing the MSA. Defaults to "Muscle".
+#' @param cpu Integer. The number of CPUs to use for the search. Defaults to 1.
+#' @param incE Numeric. The inclusion threshold for the HMM search. Defaults to 1e-6.
+#' @param ... Additional arguments passed to kegg_kegg_msa().
+#'
+#' @return The result of the HMM search.
+#' @examples
+#' tblout_from_ko("K00001")
+#' @export
+tblout_from_ko <- function(ko, dbs, method = "Muscle", cpu = 1, incE = 1e-6, hmmer_path = "", ...) {
+  aln <- get_kegg_msa(ko, method = method, ...)
+  tblout_from_afa(aln)
+}
+
+#' Perform HMM-based search from an alignment
+#'
+#' This function takes aligned fasta sequences (AFA) as an input, constructs
+#' a Hidden Markov Model (HMM), and uses it to search in designated databases.
+#'
+#' @param afa Aligned fasta sequences in string format or an object that
+#'  can be interpreted as such.
+#' @param cpu The number of CPU cores to use for the search process.
+#'  Defaults to 1 to ensure compatibility with all systems.
+#' @param incE The inclusion threshold E-value for reported hits in the
+#'  search. Lower values are more stringent. Defaults to 1e-6.
+#' @param ... Additional arguments to be passed to the search function.
+#'
+#' @return Returns the path to the tblout results.
+#'
+#' @examples
+#' # Example assuming 'sequences.afa' is your aligned fasta file
+#' afa_content <- readLines("sequences.afa")
+#' search_results <- tblout_from_afa(afa_content)
+#' print(search_results)
+#'
+#' @export
+tblout_from_afa <- function(afa, dbs, parallel_processes = 1, cpus_per_process = 1, incE = 1e-6, hmmer_path = "") {
+  hmm <- build_hmm(afa, hmmer_path = hmmer_path)
+  search_hmm(hmm, dbs, parallel_processes = parallel_processes, cpus_per_process = cpus_per_process, incE = incE, hmmer_path = hmmer_path)
+}
+
+#' Perform a Multiple Sequence Alignment and Find Hits in Databases
+#'
+#' This function first reads a fasta file containing amino acid sequences, performs
+#' a multiple sequence alignment using the specified method, and then searches
+#' for hits in databases using the aligned sequences. The results are returned
+#' in a specific format.
+#'
+#' @param faa Character. The path to the fasta file containing amino acid sequences.
+#' @param dbs Character or Character vector. Specifies the databases against which the
+#' sequences will be searched.
+#' @param method Character. The default method for sequence alignment is "Muscle".
+#' Other methods supported by `msa` function can be used.
+#' @param cpu Integer. The number of CPU threads to use for the search. The default is 1.
+#' @param incE Numeric. The inclusion threshold E-value for considering a database hit
+#' significant. Defaults to 1e-6.
+#' @param ... Additional arguments passed to the `msa` function.
+#'
+#' @return Returns the result of searching the aligned sequences against specified
+#' databases. The format of the returned object depends on the implementation of
+#' `tblout_from_afa`.
+#'
+#' @examples
+#' \dontrun{
+#' tblout_from_faa("sequences.faa", dbs=c("db1", "db2"), method="ClustalW")
+#' }
+#'
+#' @export
+#' @importFrom Biostrings readAAStringSet
+#' @import msa
+tblout_from_faa <- function(
+    faa, dbs, method = "Muscle",
+    cpu = 1, incE = 1e-6, ...) {
+  my_sequences <- Biostrings::readAAStringSet(faa)
+  aln <- msa::msa(my_sequences, method = method, ...)
+  tblout_from_afa(aln, cpu = cpu, incE = incE)
+}
