@@ -181,8 +181,6 @@ read_gtdbtk <- function(file) {
 #'
 #' @export
 inverted_names <- function(v) {
-  # make sure the names are unique
-  stopifnot(length(unlist(v)) == length(unique(unlist(v))))
   with(stack(v), split(as.character(ind), values))
 }
 

@@ -61,9 +61,16 @@ get_kegg_msa <- function(ko, nmax = Inf, method = "Muscle", ...) {
 #' into your R session.
 get_kegg_kos_from_module <- function(module) {
   stopifnot(length(module) == 1)
-  m <- KEGGREST::keggGet(module)
-  kos_raw <- names(m[[1]]$ORTHOLOGY)
-  unlist(strsplit(kos_raw, ","))
+  m <- KEGGREST::keggGet(module)[[1]]
+  kos_raw <- names(m$ORTHOLOGY)
+  kos <- unique(unlist(strsplit(kos_raw, "[,+]")))
+  # keggGet expects at most 10 genes
+  batches <- split(kos, 0:(length(kos) - 1) %/% 10)
+  symbols_list <- sapply(batches, function(batch) {
+    Sys.sleep(.1)
+    sapply(KEGGREST::keggGet(batch), `[[`, "SYMBOL")
+  })
+  setNames(kos, Reduce(`c`, symbols_list))
 }
 
 #' Retrieve KEGG reactions from a specified module as a graph
@@ -109,6 +116,9 @@ get_kegg_reactions_from_module <- function(module) {
   stopifnot(!any(grepl(",", orthology)))
   orthology <- strsplit(gsub("\\]", "", orthology), " ")
   inverted_orthology <- inverted_names(orthology)
+  if (is.list(inverted_orthology)) {
+    inverted_orthology <- sapply(inverted_orthology, paste, collapse = ",")
+  }
   reactions <- sapply(strsplit(names(m$REACTION), ","), function(reactions) {
     paste(reactions, inverted_orthology[reactions], sep = ":", collapse = "|")
   })
