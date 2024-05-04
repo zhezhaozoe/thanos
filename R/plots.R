@@ -30,7 +30,7 @@ barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
     setDT(psmelt(ps))
   }
   d <- d[,
-    .(Abundance = sum(Abundance)),
+    .(Abundance = mean(Abundance, na.rm = TRUE)),
     by = c("Sample", names(sample_data(ps)), fill)
   ]
   p <- ggplot(
@@ -44,7 +44,7 @@ barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
     geom_col(position = position, ...) +
     labs(fill = fill, x = "Sample") +
     theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5))
-  if (all(d[, sum(Abundance), by = Sample]$V1 == 1, na.rm = T) || position == "fill") {
+  if (all(d[, sum(Abundance, na.rm = TRUE), by = Sample]$V1 == 1) || position == "fill") {
     p <- p + scale_y_continuous(labels = scales::percent)
   }
   p
@@ -101,7 +101,10 @@ barplot_depths <- function(
       ordered_by_cols <- c(ordered_by_cols, ordered_col)
     }
   }
-  d <- d[, .(Abundance = sum(Abundance)), by = c(by_cols, ordered_by_cols)]
+  d <- d[,
+    .(Abundance = mean(Abundance, na.rm = TRUE)),
+    by = c(by_cols, ordered_by_cols)
+  ]
   p <- ggplot(
     d,
     aes(
@@ -125,7 +128,7 @@ barplot_depths <- function(
     labs(fill = fill, x = group) +
     if (is.null(wrap)) NULL else facet_wrap(~ .data[[wrap]], scale = "free_x")
   # The c() in by is necessary, otherwise group will be interpreted as a column of d (if present)
-  if (all(d[, sum(Abundance), by = c(group)]$V1 == 1, na.rm = T) || position == "fill") {
+  if (all(d[, sum(Abundance, na.rm = TRUE), by = c(group)]$V1 == 1) || position == "fill") {
     p <- p + scale_y_continuous(labels = scales::percent)
   }
   p
@@ -247,7 +250,7 @@ boxplot_depths <- function(
       ) +
       geom_text(
         data = comps,
-        aes(x = (x1 + x2) / 2, y = max_y + 2 * shift_y * level, label = prettyNum(`p.value`, 2)),
+        aes(x = (x1 + x2) / 2, y = max_y + 2 * shift_y * level, label = prettyNum(signif(`p.value`, 2))),
         vjust = 0, nudge_y = comps$shift_y / 2,
         inherit.aes = FALSE
       )
@@ -293,7 +296,7 @@ keggmodule_plot <- function(
     setDT(psmelt(psi))
   }), id = "zzthanos_KO"))
   extract_kos <- function(reaction_text) {
-    unique(grep("^K", strsplit(reaction_text, ":|,|\\|")[[1]], value = TRUE))
+    unique(grep("^K", strsplit(reaction_text, "[:,|+]")[[1]], value = TRUE))
   }
   reactions_to_kos <- unique(
     kegg_module[, .(zzthanos_KO = extract_kos(.BY[[1]])), by = reaction]
@@ -361,8 +364,11 @@ keggmodule_plot <- function(
     geom_edge_link2(
       data = function(x) tidygraph::filter(get_edges("long")(x), type == "arrow"),
       angle_calc = "along",
-      arrow = arrow(length = unit(4, "mm")), 
-      end_cap = label_rect("C00000")) +
+      arrow = arrow(length = unit(2, "mm")),
+      end_cap = label_rect(
+        "C00000",
+        cex = GeomLabel$default_aes$size / 11 * .pt) # 11/.pt is the default size
+      ) +
     geom_node_label(
       data = function(x) tidygraph::filter(get_nodes()(x), type == "compound"),
       aes(label = name)
