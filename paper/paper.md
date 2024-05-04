@@ -1,37 +1,7 @@
 ---
-title: 'Thanos: an R pacakge for gene-centric analysis of the functional potential in metagenomic samples'
-tags:
-  - R
-  - metagenomics
-  - functional profiling
-authors:
-  - name: Zhe Zhao
-    orcid: 0000-0001-9515-9919
-    affiliation: "1, 2"
-  - name: Federico Marotta
-    orcid: 0000-0002-0174-3901
-    affiliation: 2
-  - name: Min Wu
-    affiliation: 1
-affiliations:
- - name: College of Life Sciences, Zhejiang University, People’s Republic of China
-   index: 1
- - name: European Molecular Biology Laboratory, Germany
-   index: 2
-
-date: 25 March 2024
+date: 4 May 2024
 bibliography: paper.bib
 ---
-
-# Abstract
-
-As the amount of metagenomic sequencing keeps increasing, there is a growing need for tools that help biologists make sense of the data.
-Specifically, researchers are often interested in the potential of a microbial community to carry out a metabolic reaction, but this analysis requires knitting together multiple software tools into a complex pipeline.
-`thanos` offers a user-friendly R package designed for the pathway-centric analysis and visualization of the functions encoded within metagenomic samples.
-It allows researchers to go beyond taxonomic profiles and find out, in a quantitative way, which pathways are prevalent in an environment, as well as comparing different environments in terms of their functional potential.
-The analysis is based on the sequencing depth of the genes of interest, either in the metagenome-assembled genomes (MAGs) or in the raw data (contigs), using a normalization strategy that enables comparison across samples.
-The package can import the data from multiple formats and offers functions for the visualization of the results as bar plots of the functional profile, boxplots to compare functions across samples, and annotated pathway graphs.
-By streamlining the analysis of the functonal potential encoded in microbial communities, `thanos` can enable impactful discoveries in all the fields touched by metagenomics, from human health to the environmental sciences.
 
 # Introduction
 
@@ -60,7 +30,7 @@ The depth scores of individual genes can also be aggregated into their natural h
 In summary, Thanos provides functions to import metagenomic data from standard formats, perform a fine-grained functional annotation of the genes within the samples, and visualize the resulting profiles, potentially aggregated into an annotated reaction graph.
 The functionality and usage of the package are described in the next sections.
 
-# Methods (software description)
+# Methods
 
 The overall design of the package draws inspiration from `phyloseq`.
 Briefly, the main component of a `phyloseq` object is the OTU abundance table, in the form of a numeric matrix with taxa on the rows and samples on the columns (or vice versa).
@@ -86,9 +56,11 @@ The results are compiled into another `phyloseq` matrix, where instead of OTUs w
 
 Finally, Thanos provides functions to visualize the results using the popular `ggplot2` package.
 There are three types of plot: bar plots, which show the depth profile across samples, potentially grouped by taxon; box plots, displaying aggregate statistics about groups of samples; and annotated reaction graphs, reproducing a KEGG module and coloring the reactions by the depths of the enzymes that catalyze them.
-In the subsequent subsections, the implementation will be discussed in detail.
+Figure @fig:workflow gives a global overview of the packages' functionality, while in the subsequent subsections the implementation will be discussed in detail.
 
-## Importing depths
+![Overview of the Thanos workflow.](../workflow.png){#fig:workflow width=100%}
+
+## Importing depths files
 
 First, we need to import the pre-computed depths.
 These files can be obtained from standard tools in the metagenomic arsenal, such as MetaBAT or CoverM, and are generated as part of a standard workflow.
@@ -98,42 +70,100 @@ For contig depths, due to their large size, there is usually one file for each s
 One complication is that the header of the contig depths files often has a prefix or suffix denoting the sample where the contig comes from; since each file would have a different header, this prevents the concatenation.
 For this reason the user has to specify a pattern and a replacement that will be applied to the headers, so that the sample-specific part can be removed.
 
-## Deploying HMMER
+## Running HMMER
 
 Next, we need a profile HMM file for each gene of interest.
+Typcal genes of interest are enzymes that perform key metabolic functions.
 If the user has already produced or downloaded custom HMMs, nothing else is needed.
 Otherwise, HMMs can be generated directly from KEGG orthologs: the user just needs to supply a KO identifier, and all the genes in the orthologous family are downloaded, aligned, and converted into an HMM profile.
 The download uses the `KEGGREST` package, which interfaces with the KEGG API.
 For the alignment we rely on the `msa` package from Bioconductor, which offers several choices for the algorithm, with "Muscle" being the default.
-Once the alignment is obtained, it is converted into an HMM profile using `HMMER`.
+Once the alignment is obtained, it is converted into an HMM profile using the local `HMMER` binaries.
+
 No matter how it was generated, the HMM files for the genes of interest must then be searched into the samples.
-
 For this purpose, the user is expected to provide sequence files in FASTA format containing the called genes from each entry in the previously generated `phyloseq` depths object.
-In particular, when dealing with MAG depths, there should be one fasta file for each MAG.
-Since each individual MAG normally has many genes, there must be a mechanism to associate each gene to the MAG where it comes from.
-Thanos uses a linker function
+In particular, when dealing with MAG depths there should be one fasta file for each MAG, and when dealing with contig depths there should be one fasta file for each sample.
+These files are produced by popular tools like `Prodigal` or `Prokka`, which are already included in comprehensive metagenomic pipelines like `nf-core/mag`.
+Thanos provides the function `search_hmm(hmm_file, target_fasta_files)`, with which spawns an `hmmsearch` process and parses the results.
+In this case, the results will be the IDs of the genes that bear sequence similarity with the HMM profile, along with their respective scores.
+Users can specify the minimum score threshold to retain hits.
+The search should be repeated for the control gene, for which Thanos already provides an HMM file, but users can also use their own if they wish.
+The default control gene is GrpE, a nucleotide exchange factor that is important for protein folding and heat-shock response.
+The HMM profile for this gene was derived from GTDB v214 marker files: `bac120_r214_reps_PF01025.20.afa`.
 
+## Aggregation and normalisation
 
-## Aggregating and normalising
+At the end of the search phase we thus have a list of genes that are homologous to the given HMM profile, as well as a list of genes that are homologous to the control HMM profile.
+Since each sample usually contains many MAGs or contigs, and each individual MAG or contig contains many genes, there must be a mechanism to associate each gene to the MAG or contig where it comes from.
+Thanos uses a linker function, which can also be specified by the user, to achieve this.
+The linker function takes the name of a FASTA file and the ID of the gene, and returns the MAG or contig where it comes from.
+Through the linker function it becomes possible to filter the MAGs or contigs according to whether they contain the target gene.
+For each sample, Thanos aggregates the depths of all the MAGs or contigs that contain the gene of interest, and divides it by the aggregated depth of all the MAGs or contigs that contain the control gene.
+The resulting score represent how prevalent is the gene of interest compared to a universal single copy gene, in each sample.
+For the convenience of the user, two linker functions which cover the most common cases are already built-in.
+As an additional feature, when the taxonomy assignments of the MAGs are known, it is possible to stratify the score by taxonomy.
+This means that there will be one score for each taxon in each sample, making it easy to make hypotheses about the role of a particular taxon in the ecosystem.
+All the scores are saved in a `phyloseq` object, which is returned to the user.
 
 ## Visualization
 
+The last part of the Thanos workflow consists in the visualization of the results.
+Advanced users can of course compose their own plots starting from the aggregated results, but three plot types are also provided by default.
+The first is a bar plot of the depth scores.
+We provide a flexible interface where users can choose what to show on the *x*-axis, and the depths will be automatically aggregated by that variable.
+Indeed, as the results are normal `phyloseq` objects, they can be decorated with sample metadata or taxonomy tables.
+By default, samples are on the *x*-axis, but users may choose to aggregate the samples into subgroups, or to show the depths by taxonomy instead.
+The second plot type is a box plot, useful to compare groups of samples.
+Again, users have all the freedom to customize the groups.
+Finally, we provide a function that plots the KEGG reaction graph of a whole module, where each enzyme is colored by its depth score in the samples of interest.
+
+## Parallelization
+
+As metagenomic datasets can be rather big, Thanos makes it possible to run the HMM searches in parallel, which can dramatically speed-up the code execution.
+There are two nested levels of parallelism: firstly, users can control how many parallel `hmmsearch` processes are spawned, and secondly, for each process it is possible to choose how many threads it will use.
+The outermost level of parallelism is most useful when there are many protein sequence databases, whereas the innermost level is especially useful when the individual sequence databases are large.
+Reading contigs depths files is also parallelized.
+
+## Dependencies
+
+Thanos depends on R and the following packages: `phyloseq`, `data.table`, `KEGGREST`, `msa`, `Biostrings`, and `ggplot2`.
+In addition, the `HMMER` binaries must be installed separately.
+
 # Results
 
-## Mags workflow
+To illustrate the functionality of our software, we will showcase two applications.
+The data come from the TARA ocean project [@sunagawadi2020tara] (suppl. table 1) and they were pre-processed as follows.
+First, we downloaded the raw reads for two ocean "provinces" (according to the nomenclature of the original publication): the Red Sea and the Mediterranean Sea, corresponding to 11 distinct sampling stations.
+Then we used the `nf-core/mag` v2.5.4 automated pipeline for assembly, binning, and annotation.
+This provided all the files necessary for running Thanos.
 
-## Contigs workflow
+## Mags workflow: sulfur metabolism by taxonomy
+
+Our aim was to investigate which taxa have the potential to perform sulfur metabolism in these two seas.
+Thanos minimally requires three inputs: a list of genes of interest, the MAG depth files, and the protein sequence files, all generated by the `nf-core/mag` workflow.
+Since we wanted to stratify the analysis by taxonomy, we also provided a table with the GTDB taxonomy of each MAG, also generated by `nf-core/mag`.
+As for the genes, we extracted all the genes in KEGG's "Assimilatory sulfate reduction" pathway.
+We just had to give Thanos the KEGG ortholog IDs of the genes and the paths to the files generated during the `nf-core/mag` workflow.
+@fig:mags reproduces our thought process when 
+
+![Bla](../mags_patchwork.png){#fig:mags width=100%}
+
+## Contigs workflow: prevalence of glycolysis
+
+In the second example, we examine the prevalence of glycolisys genes.
+As we are not interested in the taxonomy, we can use the contigs rather than the MAGs, so that we don't waste any sequences.
+
+![Bla](../contigs_patchwork.png){#fig:contigs width=100%}
 
 # Discussion
+
+We developed a package to streamline a pathway-centric analysis of metagenomics data.
+It can analyze both contig-level data and MAG-level data within a single, general framework.
 
 An obvious caveat is that, even if a gene has a high DNA copy number, this does not necessarily mean that the gene will be highly expressed.
 Thus, whenever possible, metagenomics data should always be complemented by meta-transcriptomic experiments.
 
-# Overview of the method
-
 thanos requires three inputs: a list of genes of interest, which are identified by their KO (KEGG Ortholog) number [@kanehisa2000kegg]; the depths file, which represents the abundances of OTUs across samples (either raw contigs depths or binned MAGs depths); and the sequences files, which associate each OTU with the protein sequences that it contains. The `thanos` method consists in looking for the gene of interest in the sequences file using HMMer [@eddy2011hmm], then mapping the results back to the OTUs, in order to get a depth profile of the gene of interest across samples. However, these raw depths are not comparable across samples due to different overall sequencing depths. For this reason, they are normalised by the depths of the hits of single-copy marker genes that are universally conserved (for instance, any of the 120 marker genes from GTDB [@parks2021gtdb]). This enables us to interpret the final score as the average copy number of the gene of interest in the sample. An overview of the functions available in the package is shown in \autoref{fig:workflow}. However, there are also high-level function that automate most of the analysis in one step, as well as functions optimised for large-scale data. The reader is invited to consult the vignette of the package for further details.
-
-![thanos workflow.\label{fig:workflow}](workflow.png)
 
 # Acknowledgments:
 This work was supported by the China Scholarship Council and the Science & Technology Basic Resources Investigation Program of China (Grant No. 2017FY100300).
