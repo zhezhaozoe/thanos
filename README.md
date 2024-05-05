@@ -173,4 +173,4 @@ p2 <- barplot_depths(contigs_hits[selected_kos], group = "Station", wrap = "Gene
   plot_annotation(tag_levels = "A")
 ```
 
-![](paper/figures/mags_second_patchwork.png)
+![](paper/figures/contigs_second_patchwork.png)
