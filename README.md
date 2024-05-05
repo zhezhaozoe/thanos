@@ -10,7 +10,10 @@ Thanos is an R package for the functional profiling of metagenomic
 samples. It can provide quantitative information about the abundance of
 genes or pathways, using a normalization strategy that allows comparison
 of depth scores across samples. The framework is the same whether you
-want to analyze MAGs or contigs.
+want to analyze MAGs or contigs: an HMM profile for the genes of
+interest is searched in the protein sequences derived from the MAGs or
+contigs, then a score is calculated based on the depths of the HMMER
+hits. You can also visualize the results with customizable plots.
 
 ## Installation
 
@@ -21,6 +24,11 @@ You can install the development version of Thanos from
 # install.packages("devtools")
 devtools::install_github("zhezhaozoe/thanos")
 ```
+
+You’ll also need to install [HMMER](http://hmmer.org/). Make sure the
+binaries are in your `PATH` variable (or the Windows equivalent);
+alternatively, you can provide the path to the binaries as an argument
+to the Thanos functions.
 
 ## Usage
 
@@ -174,3 +182,7 @@ p2 <- barplot_depths(contigs_hits[selected_kos], group = "Station", wrap = "Gene
 ```
 
 ![](paper/figures/contigs_second_patchwork.png)
+
+### More examples
+
+Check out the package [vignette](inst/doc/introduction_to_thanos.html) or the examples for the [paper](paper/code).
