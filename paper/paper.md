@@ -1,30 +1,28 @@
 ---
-date: 4 May 2024
+date: 5 May 2024
 bibliography: paper.bib
 ---
 
 # Introduction
 
-The field of metagenomics has experienced significant growth over recent decades, offering unprecedented insights into microbial communities across various environments, ranging from the human gut to marine ecosystems.
-The progress was largely enabled by the advent of next-generation sequencing technologies and the development of algorithms for the reconstruction of individual microbial genomes from the pooled and fragmented DNA extracted from environmental samples.
+The field of metagenomics has experienced significant growth over recent decades [@zhang_2021], offering unprecedented insights into microbial communities across various environments, ranging from the human gut [@fzaal_2022] to marine ecosystems [@sunagawa_2020].
+The progress was largely enabled by the advent of next-generation sequencing technologies and the development of algorithms for the reconstruction of individual microbial genomes from the pooled and fragmented DNA extracted from environmental samples [@zhang_2021, @yang_2021].
 As is often the case, however, collecting more data does not necessarily lead to an improved understaing of the underlying biological systems.
 Thus, with increasing sequencing data, there also increases the need for tools capable of interpreting them.
-As R is one of the most popular languages for bioinformatics, not least thanks to the Bioconductor project, and since Thanos is implemented in R, in this work we shall focus mainly on the R ecosystem.
 
 One of the most basic questions that can be asked concerns which taxa are present in a sample.
 The `phyloseq` [@mcmurdie2013phyloseq] package is a powerful tool for the exploration of microbiome profiles, offering a practical approach to investigate the taxonomic composition of metagenomic samples collected from diverse environments.
 However, the taxonomic profile offers only one view into the complex and multifaceded nature of biological samples.
 The gene composition of a sample offers a complementary view, one that can help answer questions such as: does carbon fixation occur in this environment?, or: is methane metabolism more active in lakes or in the Atlantic ocean?
 This sort of information is not always reflected in the taxonomic profiles.
-Furthermore, taxonomic profiling requires either reconstructing the full metagenome-assembled genomes (MAGs), or at least recovering several marker genes from the same operational taxonomic unit (OTU) [@motus].
-On the other hand, the functional profile can be obtained on an individual gene basis, and can therefore be extracted even from unbinned contigs.
-This allows researchers to overcome the "binning bias" and consider all of the reads in a sample, not just those that were binned into MAGs.
+Furthermore, taxonomic profiling requires either reconstructing the full metagenome-assembled genomes (MAGs), which leads to a "binning bias" because unbinned sequences are not analyzed, or at least recovering several marker genes from the same operational taxonomic unit (OTU) [@motus], which can be time-consuming.
 
 As the functional profiling task is somewhat more complex than taxonomic profiling, there is currently no standard way to perform this analysis.
 Tools like Prokka [@seeman2014prokka] or the EggNog-mapper [@cantalapiedra2021eggnog] can indeed provide a bulk-level overview of the functional composition by performing sequence-similarity searches for each gene in the sample, but researchers are often interested in more specific questions about individual genes or metabolic pathways, and require a more in-depth analysis.
+
 In this work, we present Thanos, an R package that offers a convenient way to perform functional profiling with a gene- or pathway- centric approach.
 The key innovation of the package is its ability to provide quantitative functional information "depth score" for each gene of interest across samples.
-Genes with a higher sequencing depth are thought to be, at least as a first approximation, more prevalent and active in the sample.
+Genes with a higher sequencing depth are thought, at least as a first approximation, to be more prevalent and active in the sample.
 Moreover, we introduce a normalization strategy that makes depth scores comparable across samples and even across independent sequencing projects, enabling the comparative analysis of multiple environments at the same time.
 The depth scores of individual genes can also be aggregated into their natural higher-level units, the metabolic pathways imported from KEGG.
 In summary, Thanos provides functions to import metagenomic data from standard formats, perform a fine-grained functional annotation of the genes within the samples, and visualize the resulting profiles, potentially aggregated into an annotated reaction graph.
@@ -32,6 +30,7 @@ The functionality and usage of the package are described in the next sections.
 
 # Methods
 
+As R is one of the most popular languages for bioinformatics, not least thanks to the Bioconductor project, and since Thanos is implemented in R, in this work we shall focus mainly on the R ecosystem.
 The overall design of the package draws inspiration from `phyloseq`.
 Briefly, the main component of a `phyloseq` object is the OTU abundance table, in the form of a numeric matrix with taxa on the rows and samples on the columns (or vice versa).
 The OTU table can be optionally decorated with sample metadata, an expanded taxonomy table, a phylogenetic tree, and even the reference genome of each taxon.
@@ -144,14 +143,27 @@ Thanos minimally requires three inputs: a list of genes of interest, the MAG dep
 Since we wanted to stratify the analysis by taxonomy, we also provided a table with the GTDB taxonomy of each MAG, also generated by `nf-core/mag`.
 As for the genes, we extracted all the genes in KEGG's "Assimilatory sulfate reduction" pathway.
 We just had to give Thanos the KEGG ortholog IDs of the genes and the paths to the files generated during the `nf-core/mag` workflow.
-@fig:mags reproduces our thought process when 
+
+First, we can explore the sulfur assimilation potential by plotting the depth score of the genes across stations (Figure @fig:mags A).
+This give us a feeling for any overall differences between the stations, as well as which are the most important phyla.
+In this case, the abundances of sulfur genes is relatively uniform across samples, except possibly for station `TARA_022`, which shows lower abundances.
+Moreover, the contribution of phyla to sulfur assimilation also appear uniform, with no prevalent taxon.
+The most abundant genes are APR, CysC, CysN, and CysCN.
+
+If we are especially interested in one gene, say, CysCN, we can explore it more in-depth by comparing its abundance across two environments.
+We found that its abundance is significantly lower in the Red sea than in the Mediterranean sea (Figure @fig:mags B).
+Nevertheless, the relative contributions of the taxa are not greatly different, with the exception of station `TARA_022` (Figure @fig:mags C).
 
 ![Bla](../mags_patchwork.png){#fig:mags width=100%}
 
 ## Contigs workflow: prevalence of glycolysis
 
 In the second example, we examine the prevalence of glycolisys genes.
-As we are not interested in the taxonomy, we can use the contigs rather than the MAGs, so that we don't waste any sequences.
+As we are not interested in the taxonomy, we can use the contigs rather than the MAGs, so that we retain even the unbinned DNA.
+We can annotate the reaction graph of glycolysis with the depths scores computed for our samples (Figure @fig:contigs A).
+We see that two reactions, namely glucose to glucose-6-phosphate performed by the glucose phosphotransferase enzyme, and glyceraldeide-3-phosphate to 3-phosphoglycerate performed by glyceraldehyde-3-phosphate dehydrogenase with ferredoxin cofactor, are almost absent.
+On the other hand, the enzymes phosphoglycerate kinase, catalyzing the reaction from 3-phosphoglyceroyl-phosphate to to 3-phosphoglycerate, have an average copy number of 2.8 in these samples.
+As this reaction can be performed by four different enzymes, we also investigated the abundance of each individual gene (Figure @fig:contigs B), finding that GapB (K00150) and GapA (K00134) are the most abundant, whereas gapor (K11389) is virtually inexistent.
 
 ![Bla](../contigs_patchwork.png){#fig:contigs width=100%}
 
@@ -159,11 +171,16 @@ As we are not interested in the taxonomy, we can use the contigs rather than the
 
 We developed a package to streamline a pathway-centric analysis of metagenomics data.
 It can analyze both contig-level data and MAG-level data within a single, general framework.
-
-An obvious caveat is that, even if a gene has a high DNA copy number, this does not necessarily mean that the gene will be highly expressed.
-Thus, whenever possible, metagenomics data should always be complemented by meta-transcriptomic experiments.
-
-thanos requires three inputs: a list of genes of interest, which are identified by their KO (KEGG Ortholog) number [@kanehisa2000kegg]; the depths file, which represents the abundances of OTUs across samples (either raw contigs depths or binned MAGs depths); and the sequences files, which associate each OTU with the protein sequences that it contains. The `thanos` method consists in looking for the gene of interest in the sequences file using HMMer [@eddy2011hmm], then mapping the results back to the OTUs, in order to get a depth profile of the gene of interest across samples. However, these raw depths are not comparable across samples due to different overall sequencing depths. For this reason, they are normalised by the depths of the hits of single-copy marker genes that are universally conserved (for instance, any of the 120 marker genes from GTDB [@parks2021gtdb]). This enables us to interpret the final score as the average copy number of the gene of interest in the sample. An overview of the functions available in the package is shown in \autoref{fig:workflow}. However, there are also high-level function that automate most of the analysis in one step, as well as functions optimised for large-scale data. The reader is invited to consult the vignette of the package for further details.
+The software is user-friendly and efficient, and it integrates well within the existing R ecosystem, in particular with the `phyloseq` and `ggplot2` packages.
+An obvious caveat of the Thanos method is that, even if a gene has a high DNA copy number, this does not necessarily mean that the gene will be highly expressed.
+Thus, whenever possible, metagenomics data should be complemented by meta-transcriptomic or even proteomics experiments.
+Even with this limitation, functional profiling of metagenomic samples can offer insights into not just which bacteria populate an environment, but also what are they doing there and how much are they doing it.
+This is especially relevant as even different strains of the same species can harbor sometimes vastly different gene portfolios, and therfore perform vastly different metabolic reactions.
+Thus, by looking at the genes directly instead of the taxonomy, we can gain a more nuanced picture of the role of the microbial community in an environment.
+Indeed, our package has been optimized for comparing functional profiles across environments.
+Even though we focused on metabolic pathways in this paper, the applicability of Thanos extends to any other phenotype that can be linked to genes.
+For example, it is possible to compare the abundance of pathogenic genes, or antimicrobial genes, or even different classes of CRISPR systems.
+In conclusion, we hope that our framework will enable new discoversies in environmental research.
 
 # Acknowledgments:
 This work was supported by the China Scholarship Council and the Science & Technology Basic Resources Investigation Program of China (Grant No. 2017FY100300).
