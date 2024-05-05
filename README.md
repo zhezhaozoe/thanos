@@ -38,7 +38,9 @@ gene as well. We recommend building the HMM from one of the 120
 ### MAGs example
 
 ``` r
+
 library(thanos)
+library(patchwork)
 
 # Import depths
 mags_depths_files <- "inst/extdata/mags_example/depths/mag_depths_summary.tsv"
@@ -84,27 +86,25 @@ mags_hits <- get_hits_depths_from_hmm(
   taxrank = "Phylum"
 )
 
-barplot_depths(mags_hits, group = "Station", fill = "Phylum", wrap = c("Gene", "Province")) +
-  guides(fill = guide_legend(ncol = 1)) +
+theme_set(theme_bw(base_size = 7))
+
+p1 <- barplot_depths(mags_hits, group = "Station", fill = "Phylum", wrap = c("Gene", "Province")) +
   theme(
-    legend.key.size = unit(0.4, "cm"),
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
+    legend.key.size = unit(0.4, "cm")
+    # axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
   )
 
-boxplot_depths(mags_hits$cysNC, fill = "Province", signif = TRUE, show.legend = FALSE) +
-  expand_limits(y = 6.1) +
-  theme(
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
-  )
+p2 <- boxplot_depths(mags_hits$cysNC, fill = "Province", signif = TRUE, show.legend = FALSE) +
+  expand_limits(y = 6.1)
 
-keggmodule_plot(sulfur_assimilation, setNames(mags_hits, interesting_KOs)) +
-  theme_void(base_size = base_size) +
-  theme(legend.position = "bottom")
+p3 <- keggmodule_plot(sulfur_assimilation, setNames(mags_hits, interesting_KOs)) +
+  expand_limits(x = c(-0.55, 1.35)) +
+  theme_void(base_size = base_size)
+
+((p1 | (p2 / p3)) & theme(legend.position = "bottom")) +
+  plot_layout(guides = "collect")
 ```
 
-<img src="paper/figures/mags_barplot_facetgrid.png"
-style="width:50.0%" />
-<img src="paper/figures/mags_boxplot.png" style="width:30.0%" />
-<img src="paper/figures/mags_keggmodule.png" style="width:50.0%" />
+![](paper/figures/mags_second_patchwork.png)
 
 ### Contigs example
