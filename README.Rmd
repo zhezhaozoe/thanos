@@ -97,15 +97,16 @@ p1 <- barplot_depths(mags_hits, group = "Station", fill = "Phylum", wrap = c("Ge
     # axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
   )
 
-p2 <- boxplot_depths(mags_hits$cysNC, fill = "Province", signif = TRUE, show.legend = FALSE) +
+p2 <- boxplot_depths(mags_hits$cysNC, x = "Province", signif = TRUE, show.legend = FALSE) +
   expand_limits(y = 6.1)
 
 p3 <- keggmodule_plot(sulfur_assimilation, setNames(mags_hits, interesting_KOs)) +
-  expand_limits(x = c(-0.55, 1.35)) +
+  expand_limits(x = c(-0.65, 1.45)) +
   theme_void(base_size = base_size)
 
 ((p1 | (p2 / p3)) & theme(legend.position = "bottom")) +
-  plot_layout(guides = "collect")
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A")
 
 ```
 
@@ -113,7 +114,7 @@ p3 <- keggmodule_plot(sulfur_assimilation, setNames(mags_hits, interesting_KOs))
 
 ### Contigs example
 
-```{r}
+```{r, eval = FALSE}
 
 library(thanos)
 library(patchwork)
@@ -121,7 +122,7 @@ library(patchwork)
 # Import contig depths
 contigs_depths_files <- list.files("inst/extdata/contigs_example/depths/", full.names = T)
 names(contigs_depths_files) <- sub("MEGAHIT-(group-\\d+)-depth.txt.gz", "\\1", basename(contigs_depths_files))
-contigs_otus <- import_contig_depths(contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1", mc.cores = min(48, length(contigs_depths_files)))
+contigs_otus <- import_contig_depths(contigs_depths_files, sub_pattern = "MEGAHIT-group-\\d+-([^.]*).*", sub_replacement = "\\1")
 
 # Read sample metadata
 samplesheet <- read.table(
@@ -154,21 +155,25 @@ contigs_hits <- get_hits_depths_from_hmm(
   control_hmm,
   contigs_ps,
   contigs_sequences_files,
-  linker = contigs_linker,
-  parallel_processes = 31,
-  cpus_per_process = 2,
+  linker = contigs_linker
 )
-# saveRDS(contigs_hits, "contigs_hits.Rds")
 
-# Make plots
-base_size <- 7
-update_geom_defaults("text", list(size = base_size / .pt))
-update_geom_defaults("label", list(size = (base_size - 1) / .pt))
+theme_set(theme_bw(base_size = 7))
 
 p1 <- keggmodule_plot(glycolysis, contigs_hits) +
-  expand_limits(x = c(-0.7, 1.6)) +
+  expand_limits(x = c(-7, 1.6)) +
   theme_void(base_size = base_size) +
   theme(legend.position = "bottom")
-ggsave("../figures/contigs_graph.png")
+
+selected_kos <- c("K00134", "K00150", "K11389", "K00927")
+p2 <- barplot_depths(contigs_hits[selected_kos], group = "Station", wrap = "Gene") +
+  guides(fill = guide_legend(ncol = 1)) +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
+  )
+
+(p1 | p2)+
+  plot_annotation(tag_levels = "A")
 
 ```
+
