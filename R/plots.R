@@ -62,7 +62,9 @@ barplot_depths_by_sample <- function(ps, fill = NULL, position = "stack", ...) {
 #' on top of each other, "dodge" places them side by side. Defaults to
 #' "stack".
 #' @param wrap (Optional) The name of a column to be used for facetting
-#' the plot into separate panels.
+#' the plot into separate panels. It can also be a vector of two names,
+#' in which case it will use facet_grid() with the first variable on the
+#' rows and the second one on the columns.
 #' @param ... Additional arguments passed on to `geom_col` from
 #'`ggplot2`.
 #'
@@ -125,8 +127,16 @@ barplot_depths <- function(
   ) +
     geom_col(position = position, ...) +
     theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5)) +
-    labs(fill = fill, x = group) +
-    if (is.null(wrap)) NULL else facet_wrap(~ .data[[wrap]], scale = "free_x")
+    labs(fill = fill, x = group)
+  if (length(wrap) == 1) {
+    p <- p + facet_wrap(~ .data[[wrap]], scale = "free_x")
+  } else if (length(wrap) == 2) {
+    p <- p + facet_grid(
+      formula(paste(wrap, collapse = "~")),
+      scales = "free_x",
+      space = "free_x"
+    )
+  }
   # The c() in by is necessary, otherwise group will be interpreted as a column of d (if present)
   if (all(d[, sum(Abundance, na.rm = TRUE), by = c(group)]$V1 == 1) || position == "fill") {
     p <- p + scale_y_continuous(labels = scales::percent)
@@ -306,7 +316,7 @@ keggmodule_plot <- function(
     depths_list_aggr, by = "zzthanos_KO", all.x = TRUE, allow.cartesian = TRUE
   )
   kegg_dt_aggr <- kegg_dt[,
-    .(Abundance = mean(Abundance)),
+    .(Abundance = mean(Abundance, na.rm = TRUE)),
     by = c("from", "to", "from_name", "to_name", "reaction", wrap)
   ]
   if (!is.null(wrap)) {
