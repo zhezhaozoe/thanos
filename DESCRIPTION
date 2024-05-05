@@ -1,6 +1,6 @@
 Package: thanos
 Title: Analysis of metagenomes
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: c(
     person("Zhe", "Zhao", email = "zhaozhe@zju.edu.cn", role = c("aut", "cre")),
     person("Federico", "Marotta", role = c("ctb")))
