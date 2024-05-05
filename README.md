@@ -86,10 +86,25 @@ mags_hits <- get_hits_depths_from_hmm(
 
 barplot_depths(mags_hits, group = "Station", fill = "Phylum", wrap = c("Gene", "Province")) +
   guides(fill = guide_legend(ncol = 1)) +
-  theme_bw(base_size = base_size) +
+  theme(
+    legend.key.size = unit(0.4, "cm"),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
+  )
+
+boxplot_depths(mags_hits$cysNC, fill = "Province", signif = TRUE, show.legend = FALSE) +
+  expand_limits(y = 6.1) +
   theme(
     axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
   )
+
+keggmodule_plot(sulfur_assimilation, setNames(mags_hits, interesting_KOs)) +
+  theme_void(base_size = base_size) +
+  theme(legend.position = "bottom")
 ```
 
-![](paper/figures/mags_barplot_facetgrid.png)
+<img src="paper/figures/mags_barplot_facetgrid.png"
+style="width:50.0%" />
+<img src="paper/figures/mags_boxplot.png" style="width:30.0%" />
+<img src="paper/figures/mags_keggmodule.png" style="width:50.0%" />
+
+### Contigs example
