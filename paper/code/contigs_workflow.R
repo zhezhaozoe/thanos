@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript --vanilla
 
+library(thanos)
+library(patchwork)
+
 # Import contig depths
 contigs_depths_files <- list.files("inst/extdata/contigs_example/depths/", full.names = T)
 names(contigs_depths_files) <- sub("MEGAHIT-(group-\\d+)-depth.txt.gz", "\\1", basename(contigs_depths_files))
@@ -40,17 +43,18 @@ contigs_hits <- get_hits_depths_from_hmm(
   parallel_processes = 31,
   cpus_per_process = 2,
 )
-saveRDS(contigs_hits, "/g/bork3/home/marotta/thanos2/paper/contigs_hits.Rds")
+# saveRDS(contigs_hits, "contigs_hits.Rds")
 
 # Make plots
 base_size <- 7
 update_geom_defaults("text", list(size = base_size / .pt))
-update_geom_defaults("label", list(size = base_size / .pt))
+update_geom_defaults("label", list(size = (base_size - 1) / .pt))
 
 p1 <- keggmodule_plot(glycolysis, contigs_hits) +
-  expand_limits(x = c(-0.5, 1.4)) +
-  theme_void(base_size = base_size)
-ggsave("/g/bork3/home/marotta/thanos2/paper/contigs_graph.png")
+  expand_limits(x = c(-0.7, 1.6)) +
+  theme_void(base_size = base_size) +
+  theme(legend.position = "bottom")
+ggsave("../figures/contigs_graph.png")
 
 selected_kos <- c("K00134", "K00150", "K11389", "K00927")
 p2 <- barplot_depths(contigs_hits[selected_kos], group = "Station", wrap = "Gene") +
@@ -59,10 +63,13 @@ p2 <- barplot_depths(contigs_hits[selected_kos], group = "Station", wrap = "Gene
   theme(
     axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
   )
-ggsave("/g/bork3/home/marotta/thanos2/paper/contigs_barplot.png", width = 7, height = 4)
+ggsave("../figures/contigs_barplot.png", width = 7, height = 4)
 
 p <- (p1 | p2) +
   plot_layout() +
   plot_annotation(tag_levels = "A", tag_prefix = "(", tag_suffix = ")")
-ggsave("/g/bork3/home/marotta/thanos2/paper/contigs_patchwork.png")
+ggsave("../figures/contigs_patchwork.png", width = 8, height = 6)
 
+
+p_facetgrid <- barplot_depths(contigs_hits, group = "Station", wrap = c("Gene", "Province")) +
+#   theme_bw(base_size = base_size) +contigs_barplot_facetgrid.png", width = 6, height = 12)
