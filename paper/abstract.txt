@@ -1,7 +1,7 @@
 As the amount of metagenomic sequencing keeps increasing, there is a growing need for tools that help biologists make sense of the data.
 Specifically, researchers are often interested in the potential of a microbial community to carry out a metabolic reaction, but this analysis requires knitting together multiple software tools into a complex pipeline.
-`thanos` offers a user-friendly R package designed for the pathway-centric analysis and visualization of the functions encoded within metagenomic samples.
-It allows researchers to go beyond taxonomic profiles and find out, in a quantitative way, which pathways are prevalent in an environment, as well as comparing different environments in terms of their functional potential.
-The analysis is based on the sequencing depth of the genes of interest, either in the metagenome-assembled genomes (MAGs) or in the raw data (contigs), using a normalization strategy that enables comparison across samples.
-The package can import the data from multiple formats and offers functions for the visualization of the results as bar plots of the functional profile, boxplots to compare functions across samples, and annotated pathway graphs.
-By streamlining the analysis of the functonal potential encoded in microbial communities, `thanos` can enable impactful discoveries in all the fields touched by metagenomics, from human health to the environmental sciences.
+Thanos offers a user-friendly R package designed for the pathway-centric analysis and visualization of the functions encoded within metagenomic samples.
+It allows researchers to go beyond taxonomic profiles and find out, quantitatively, which pathways are prevalent in an environment, as well as comparing different environments in terms of their functional potential.
+The analysis is based on the sequencing depth of the genes of interest, either in the metagenome-assembled genomes (MAGs) or in the assembled reads (contigs), using a normalization strategy that enables comparison across samples.
+The package can import the data from multiple formats and offers functions for the visualization of the results as bar plots of the functional profile, boxplots of compare functions across samples, and annotated pathway graphs.
+By streamlining the analysis of the functonal potential encoded in microbial communities, Thanos can enable impactful discoveries in all the fields touched by metagenomics, from human health to the environmental sciences.
